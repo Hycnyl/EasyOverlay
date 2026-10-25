@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace 'com.example.imageoverlay'
+    namespace 'com.hycnyl.easyoverlay'
     compileSdk 34
 
     defaultConfig {
