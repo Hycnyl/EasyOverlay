@@ -99,4 +99,19 @@ class CoordinatorTest {
             co.offer(OverlayCommand.StopAll);runCurrent();assertEquals(1,idle)
         } finally {co.close()}
     }
+    @Test fun overlayPermissionRevocationImmediatelyReportsPausedAndDoesNotReviveManualIntent()=runTest {
+        var allowed=true
+        val library=MutableStateFlow(LibraryState(assets=listOf(asset("A")),rules=listOf(AppRule("game.a",0,"A")),quickSelections=listOf(QuickSelection(8,"A"))))
+        val state=MutableStateFlow(RuntimeState())
+        val co=OverlayCoordinator(this,library,Engine(),state,"self.app",{0.8f},{allowed},{true},{},{it},{_,_->},{})
+        try {
+            co.offer(OverlayCommand.Displays(setOf(0,8)));co.offer(OverlayCommand.StartQuick(8))
+            co.offer(OverlayCommand.SetAuto(true));co.offer(OverlayCommand.Observe("game.a",1,null));advanceUntilIdle()
+            assertEquals(setOf(0,8),state.value.sessions.keys)
+            allowed=false;co.offer(OverlayCommand.Refresh(false));advanceUntilIdle()
+            assertEquals("OVERLAY_PERMISSION_MISSING",state.value.monitorProblem);assertTrue(state.value.sessions.isEmpty())
+            allowed=true;co.offer(OverlayCommand.Refresh(false));advanceUntilIdle()
+            assertEquals(setOf(0),state.value.sessions.keys)
+        } finally {co.close()}
+    }
 }

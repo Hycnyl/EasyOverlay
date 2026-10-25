@@ -193,10 +193,15 @@ class OverlayCoordinator(
 
     private fun publish() {
         val actual = engine.targets()
+        val visibleProblem = when {
+            auto && !overlayAllowed() -> "OVERLAY_PERMISSION_MISSING"
+            auto && !usageAllowed() -> "USAGE_PERMISSION_MISSING"
+            else -> monitorProblem
+        }
         state.value = RuntimeState(true, auto, foreground, observedAt,
             actual.mapValues { (display, target) -> ActiveOverlaySession(target, mountedAt[display] ?: 0) },
             pending.keys.toSet(), failed.mapValues { "图片准备或窗口挂载失败，已尽量保留原图。请检查图片、悬浮窗权限和目标屏幕后重试。" },
-            monitorProblem, ball)
+            visibleProblem, ball)
     }
 
     fun close() {

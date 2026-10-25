@@ -94,7 +94,7 @@ import kotlinx.coroutines.withContext
             Text(BuildConfig.APPLICATION_ID,style=MaterialTheme.typography.bodySmall)
             Text("自动监测：${if(!runtime.autoMonitoring)"关闭" else if(runtime.monitorProblem==null)"开启" else "暂停 / 受限"}")
             if(context.getSystemService(android.app.ActivityManager::class.java).isBackgroundRestricted)Text("系统已限制此应用的后台运行，离开应用后会话可能中断。请检查系统电池管理。",color=MaterialTheme.colorScheme.error)
-            runtime.monitorProblem?.let {Text(when(it){"USAGE_PERMISSION_MISSING"->"使用情况访问权限已撤销，请重新授权。";"SCREEN_LOCKED"->"屏幕关闭或已锁定，自动规则已暂停。";"BACKGROUND_START_NOT_ALLOWED"->"系统拒绝后台启动，请回到应用重新开启。";else->"监听或权限受限，请检查系统设置并重新开启。"},color=MaterialTheme.colorScheme.error)}
+            runtime.monitorProblem?.let {Text(when(it){"OVERLAY_PERMISSION_MISSING"->"悬浮窗权限已撤销，自动遮罩已暂停。请重新授权。";"USAGE_PERMISSION_MISSING"->"使用情况访问权限已撤销，请重新授权。";"SCREEN_LOCKED"->"屏幕关闭或已锁定，自动规则已暂停。";"BACKGROUND_START_NOT_ALLOWED"->"系统拒绝后台启动，请回到应用重新开启。";else->"监听或权限受限，请检查系统设置并重新开启。"},color=MaterialTheme.colorScheme.error)}
             Text("最近前台事件：${DiagnosticFormatter.time(runtime.observedAt)}")
             Text("前台目标：${DiagnosticFormatter.packageLabel(runtime.foregroundPackage,reveal)}")
             Row {Text("在此页显示包名",modifier=Modifier.weight(1f));Switch(reveal,{reveal=it})}
