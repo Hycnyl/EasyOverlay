@@ -1,46 +1,90 @@
 plugins {
     id 'com.android.application'
-    id 'kotlin-android'
+    id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.plugin.compose'
 }
+
+def releaseProperties = new Properties()
+def releasePropertiesPath = System.getenv('EASYOVERLAY_SIGNING_PROPERTIES')
+def releasePropertiesFile = releasePropertiesPath ? file(releasePropertiesPath) : rootProject.file('keystore.properties')
+if (releasePropertiesFile.exists()) releasePropertiesFile.withInputStream { releaseProperties.load(it) }
 
 android {
     namespace 'com.hycnyl.easyoverlay'
-    compileSdk 34
-
+    compileSdk 36
+    buildToolsVersion '36.0.0'
     defaultConfig {
-        applicationId "com.hycnyl.easyoverlay"
-        minSdk 23
-        targetSdk 34
-        versionCode 60
-        versionName "5.2.0-revolution"
+        applicationId 'com.hycnyl.easyoverlay'
+        minSdk 33
+        // API 36 target is gated on physical-device FGS review; see docs/FGS_ANDROID_REVIEW.md.
+        targetSdk 35
+        versionCode 600
+        versionName '6.0'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
-
+    buildFeatures {
+        compose true
+        buildConfig true
+    }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-
+    kotlinOptions { jvmTarget = '17' }
+    signingConfigs {
+        if (!releaseProperties.isEmpty()) {
+            release {
+                storeFile file(releaseProperties.getProperty('storeFile'))
+                storePassword releaseProperties.getProperty('storePassword')
+                keyAlias releaseProperties.getProperty('keyAlias')
+                keyPassword releaseProperties.getProperty('keyPassword')
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
+            if (!releaseProperties.isEmpty()) signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+    }
+    // Deliberately no ABI filters or splits: one universal APK.
+    testOptions {
+        unitTests.includeAndroidResources = true
+        unitTests.all {
+            maxHeapSize = '2g'
+            systemProperty 'robolectric.logging.enabled', 'false'
+        }
+    }
+    lint {
+        abortOnError true
+        htmlReport true
+        textReport true
     }
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.0"
+    implementation platform('androidx.compose:compose-bom:2025.05.01')
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.ui:ui-tooling-preview'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.compose.material:material-icons-extended'
+    debugImplementation 'androidx.compose.ui:ui-tooling'
+    implementation 'androidx.activity:activity-compose:1.10.1'
+    implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.9.0'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0'
+    implementation 'androidx.core:core-ktx:1.16.0'
+    implementation 'androidx.datastore:datastore-preferences:1.1.7'
+    implementation 'androidx.documentfile:documentfile:1.0.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
+    implementation 'com.google.code.gson:gson:2.13.1'
+    // Transitional dependencies, removed with retirement of the legacy UI and services.
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'com.google.android.material:material:1.11.0'
-    implementation 'com.google.code.gson:gson:2.10.1'
-    // 添加GIF支持
     implementation 'com.github.bumptech.glide:glide:4.16.0'
     implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.25'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2'
+    testImplementation 'org.robolectric:robolectric:4.14.1'
+    testImplementation 'androidx.test:core:1.6.1'
 }
-
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-} 
