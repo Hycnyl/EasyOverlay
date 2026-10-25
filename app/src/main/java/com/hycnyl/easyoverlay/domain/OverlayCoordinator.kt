@@ -77,7 +77,7 @@ class OverlayCoordinator(
             OverlayCommand.ToggleAll -> {
                 if (engine.targets().isNotEmpty() || manual.isNotEmpty()) {
                     displays.forEach { id -> manual.remove(id); foreground?.let { suppressed += id to it } }
-                } else displays.forEach { startQuick(it) }
+                } else { suppressed.clear(); displays.forEach { startQuick(it) } }
             }
             is OverlayCommand.SetAuto -> {
                 if (command.enabled && (!usageAllowed() || !overlayAllowed())) {

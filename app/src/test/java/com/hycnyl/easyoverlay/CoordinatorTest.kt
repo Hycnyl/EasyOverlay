@@ -114,4 +114,15 @@ class CoordinatorTest {
             assertEquals(setOf(0),state.value.sessions.keys)
         } finally {co.close()}
     }
+    @Test fun allScreenToggleCanResumeAnAutomaticRuleWithoutQuickSelection()=runTest {
+        val library=MutableStateFlow(LibraryState(assets=listOf(asset("A")),rules=listOf(AppRule("game.a",0,"A"))))
+        val state=MutableStateFlow(RuntimeState())
+        val co=OverlayCoordinator(this,library,Engine(),state,"self.app",{0.8f},{true},{true},{},{it},{_,_->},{})
+        try {
+            co.offer(OverlayCommand.SetAuto(true));co.offer(OverlayCommand.Observe("game.a",1,null));advanceUntilIdle()
+            co.offer(OverlayCommand.ToggleAll);advanceUntilIdle();assertTrue(state.value.sessions.isEmpty())
+            co.offer(OverlayCommand.ToggleAll);advanceUntilIdle()
+            assertEquals(OverlayOwner.APP_RULE,state.value.sessions[0]?.target?.owner)
+        } finally {co.close()}
+    }
 }
