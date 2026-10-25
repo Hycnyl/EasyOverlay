@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"/>
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
@@ -39,6 +40,13 @@
             android:exported="true"
             android:theme="@style/Theme.EasyOverlay.NoActionBar" />
             
+        <service
+            android:name=".platform.OverlaySessionService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="User-started, user-visible screen image overlay session with optional local app-switch observation and floating controls; persistent notification offers stop." />
+        </service>
         <service
             android:name=".OverlayService"
             android:exported="false"

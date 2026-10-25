@@ -9,10 +9,14 @@ import com.hycnyl.easyoverlay.util.ConfigPathUtil
 
 class EasyOverlayApplication : Application() {
 
+    lateinit var container: AppContainer
+        private set
+
     private var startedActivityCount = 0
 
     override fun onCreate() {
         super.onCreate()
+        container = AppContainer(this)
         if (ConfigPathUtil.getConfigRoot(this).isNotBlank()) {
             try {
                 ConfigRepository.load(this)
