@@ -36,5 +36,7 @@ captures/
 # Signing keys (DO NOT COMMIT KEYS)
 *.jks
 *.keystore
+*.p12
+dist/
 
 

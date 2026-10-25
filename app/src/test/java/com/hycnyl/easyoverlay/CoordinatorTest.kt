@@ -90,4 +90,13 @@ class CoordinatorTest {
             assertEquals("USAGE_PERMISSION_MISSING",state.value.monitorProblem)
         } finally { co.close() }
     }
+    @Test fun initializationDoesNotStopServiceBeforeFirstUserCommand()=runTest {
+        val library=MutableStateFlow(LibraryState());val runtime=MutableStateFlow(RuntimeState());var idle=0
+        val co=OverlayCoordinator(this,library,Engine(),runtime,"self.app",{0.8f},{true},{true},{},{it},{_,_->},{idle++})
+        try {
+            co.offer(OverlayCommand.Displays(setOf(0)));co.offer(OverlayCommand.Refresh(false));runCurrent()
+            assertEquals(0,idle)
+            co.offer(OverlayCommand.StopAll);runCurrent();assertEquals(1,idle)
+        } finally {co.close()}
+    }
 }

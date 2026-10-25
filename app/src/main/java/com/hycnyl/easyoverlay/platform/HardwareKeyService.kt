@@ -25,6 +25,11 @@ class HardwareKeyService : AccessibilityService() {
     private val pressed = mutableSetOf<Int>()
     private var fired = false
     private val container get() = (application as EasyOverlayApplication).container
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        // Key filtering does not require subscribing to accessibility UI events.
+        serviceInfo = serviceInfo.apply { eventTypes = 0 }
+    }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
     override fun onInterrupt() { pressed.clear(); fired = false }
     override fun onKeyEvent(event: KeyEvent): Boolean {

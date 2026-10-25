@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -68,7 +69,7 @@ import com.hycnyl.easyoverlay.platform.Permissions
     LaunchedEffect(vm){vm.messages.collect {snackbars.showSnackbar(it)}}
     BackHandler(enabled=page!=null){page=null}
     val titles=mapOf("advanced" to "高级功能","diagnostics" to "诊断与帮助","about" to "关于 EasyOverlay")
-    Scaffold(topBar={TopAppBar(title={Text(page?.let {titles[it]} ?: "EasyOverlay")},navigationIcon={if(page!=null)IconButton(onClick={page=null}){Icon(Icons.Default.ArrowBack,"返回")}},actions={if(page==null)IconButton(onClick={page="diagnostics"}){Icon(Icons.Default.Info,"打开诊断")}})},
+    Scaffold(topBar={TopAppBar(title={Text(page?.let {titles[it]} ?: "EasyOverlay")},navigationIcon={if(page!=null)IconButton(onClick={page=null}){Icon(Icons.AutoMirrored.Filled.ArrowBack,"返回")}},actions={if(page==null)IconButton(onClick={page="diagnostics"}){Icon(Icons.Default.Info,"打开诊断")}})},
         bottomBar={if(page==null)NavigationBar {
             val labels=listOf("快速使用","应用遮罩","设置");val icons=listOf(Icons.Default.Layers,Icons.Default.Apps,Icons.Default.Settings)
             labels.forEachIndexed {index,label->NavigationBarItem(selected=tab==index,onClick={tab=index},icon={Icon(icons[index],null)},label={Text(label)})}

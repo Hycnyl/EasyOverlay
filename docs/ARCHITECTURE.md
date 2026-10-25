@@ -22,8 +22,9 @@
    participates in the new app. Conflict items and unbound images remain available
    for assignment instead of silently replacing a rule.
 6. Platform ImageDecoder handles PNG/JPEG/static WebP/animated GIF on all supported
-   Android versions. No native ABI-specific dependency is needed, so the single APK
-   runs on arm64-v8a, armeabi-v7a, x86 and x86_64 without APK splitting.
+   Android versions. There is no separate native image codec. AndroidX transitive
+   native libraries are included for arm64-v8a, armeabi-v7a, x86 and x86_64 in the
+   same universal APK; the release verification script checks each library's ABIs.
 7. UsageStats cannot reliably identify independent frontmost packages on physical
    secondary displays. Automatic rules apply to the default display only in V1;
    secondary displays retain independent manual control and editable rules. UI and

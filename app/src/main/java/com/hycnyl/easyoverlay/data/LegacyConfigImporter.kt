@@ -52,7 +52,8 @@ class LegacyConfigImporter(private val context: Context, private val library: Li
             }.getOrNull()
             val matches = LegacyPlanner.relativeCandidates(item.imageReference, item.groupName, item.configName)
                 .mapNotNull { paths[it] }.distinct()
-            val source = exact ?: matches.singleOrNull()
+            val primaryPath = LegacyPlanner.relativeCandidates(item.imageReference, item.groupName, item.configName).firstOrNull()
+            val source = exact ?: primaryPath?.let { paths[it] } ?: matches.singleOrNull()
             val note = when {
                 item.key in library.state.value.importedKeys -> "已导入，将跳过"
                 source == null && matches.size > 1 -> "同名图片不唯一，请导入后手动选图"

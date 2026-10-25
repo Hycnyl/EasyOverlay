@@ -20,6 +20,7 @@ object DiagnosticFormatter {
         appendLine("Android ${Build.VERSION.RELEASE} / API ${Build.VERSION.SDK_INT} / ${Build.MANUFACTURER}")
         appendLine("悬浮窗：${Permissions.overlay(context)}；Usage Access：${Permissions.usage(context)}；通知：${Permissions.notifications(context)}；实体键权限：${Permissions.accessibility(context)}")
         appendLine("服务：${state.serviceRunning}；自动监测：${state.autoMonitoring}；限制：${state.monitorProblem ?: "无已知错误"}")
+        appendLine("系统后台运行受限：${context.getSystemService(android.app.ActivityManager::class.java).isBackgroundRestricted}")
         appendLine("前台：${packageLabel(state.foregroundPackage,includePackages)}；最近事件：${time(state.observedAt)}")
         appendLine("系统最大不透明度：${container.maximumPercent}%")
         container.displays.displays.value.forEach { display ->

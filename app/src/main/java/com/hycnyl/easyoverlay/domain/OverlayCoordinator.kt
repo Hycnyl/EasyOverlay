@@ -51,6 +51,7 @@ class OverlayCoordinator(
     private var monitorProblem: String? = null
     private var ball = false
     private var closed = false
+    private var receivedUserCommand = false
 
     init {
         state.value = RuntimeState(serviceRunning = true)
@@ -66,6 +67,9 @@ class OverlayCoordinator(
     }
 
     private fun handle(command: OverlayCommand) {
+        if (command is OverlayCommand.StartQuick || command is OverlayCommand.StopQuick || command is OverlayCommand.Toggle ||
+            command is OverlayCommand.SetAuto || command is OverlayCommand.SetBall || command == OverlayCommand.ToggleAll ||
+            command == OverlayCommand.ToggleBall || command == OverlayCommand.StopAll) receivedUserCommand = true
         when (command) {
             is OverlayCommand.StartQuick -> startQuick(command.displayId)
             is OverlayCommand.StopQuick -> { manual.remove(command.displayId); failed.remove(command.displayId) }
@@ -159,6 +163,7 @@ class OverlayCoordinator(
         val desired = if (permitted) RuleResolver.resolve(displays, manual, library.value.rules, foreground,
             auto && usageAllowed() && monitorProblem == null, ownPackage, maxAlpha(), suppressed) else emptyMap()
         val existing = engine.targets()
+        failed.keys.toList().filter { failed[it] != desired[it] }.forEach { failed.remove(it) }
         (existing.keys + pending.keys).toSet().filterNot { it in desired }.forEach { display ->
             jobs.remove(display)?.cancel(); pending.remove(display); failed.remove(display)
             try { engine.remove(display); mountedAt.remove(display) }
@@ -183,7 +188,7 @@ class OverlayCoordinator(
             }
         }
         publish()
-        if (!auto && manual.isEmpty() && !ball && pending.isEmpty() && engine.targets().isEmpty()) onIdle()
+        if (receivedUserCommand && !auto && manual.isEmpty() && !ball && pending.isEmpty() && engine.targets().isEmpty()) onIdle()
     }
 
     private fun publish() {

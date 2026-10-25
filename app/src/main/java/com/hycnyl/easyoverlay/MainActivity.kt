@@ -23,5 +23,6 @@ class MainActivity:ComponentActivity() {
     }
     override fun onStart() {super.onStart();(application as EasyOverlayApplication).container.appVisible=true}
     override fun onStop() {(application as EasyOverlayApplication).container.appVisible=false;super.onStop()}
-    override fun dispatchKeyEvent(event:KeyEvent):Boolean=if(HardwareCapture.handle(event))true else super.dispatchKeyEvent(event)
+    override fun onKeyDown(keyCode:Int,event:KeyEvent):Boolean=if(HardwareCapture.handle(event))true else super.onKeyDown(keyCode,event)
+    override fun onKeyUp(keyCode:Int,event:KeyEvent):Boolean=if(HardwareCapture.handle(event))true else super.onKeyUp(keyCode,event)
 }

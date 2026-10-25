@@ -11,6 +11,10 @@ import android.view.WindowManager
 import android.widget.TextView
 import kotlin.math.abs
 
+private class ControlView(context: Context) : TextView(context) {
+    override fun performClick(): Boolean = super.performClick()
+}
+
 /** A small optional control window, default off. It never owns an overlay session. */
 class FloatingControl(private val context: Context, private val toggle: () -> Unit, private val stop: () -> Unit) {
     private var view: TextView? = null
@@ -29,19 +33,20 @@ class FloatingControl(private val context: Context, private val toggle: () -> Un
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, PixelFormat.TRANSLUCENT).apply {
                 gravity = Gravity.TOP or Gravity.START; x = 0; y = (180 * density).toInt(); title = "EasyOverlay control"
             }
-            val control = TextView(localContext).apply {
+            var longPressed = false
+            val control = ControlView(localContext).apply {
                 text = "E"; textSize = 20f; typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
                 setTextColor(0xFFF1FFF8.toInt())
                 background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(0xFF175E51.toInt()); setStroke((2*density).toInt(),0xFFD0F0E3.toInt()) }
                 contentDescription = "EasyOverlay：轻触切换主屏遮罩，拖动移位，长按停止全部"
                 setOnClickListener { toggle() }
-                setOnLongClickListener { stop(); true }
+                setOnLongClickListener { longPressed = true; stop(); true }
             }
             var downX = 0f; var downY = 0f; var startX = 0; var startY = 0; var dragged = false
             val slop = ViewConfiguration.get(context).scaledTouchSlop
             control.setOnTouchListener { v, event ->
                 when (event.actionMasked) {
-                    MotionEvent.ACTION_DOWN -> { downX = event.rawX; downY = event.rawY; startX=params.x; startY=params.y; dragged=false; false }
+                    MotionEvent.ACTION_DOWN -> { downX = event.rawX; downY = event.rawY; startX=params.x; startY=params.y; dragged=false; longPressed=false; false }
                     MotionEvent.ACTION_MOVE -> {
                         if (abs(event.rawX-downX)>slop || abs(event.rawY-downY)>slop) dragged=true
                         if (dragged) {
@@ -50,8 +55,9 @@ class FloatingControl(private val context: Context, private val toggle: () -> Un
                             params.x = (startX + event.rawX-downX).toInt().coerceIn(0,(bounds.width()-size).coerceAtLeast(0))
                             params.y = (startY + event.rawY-downY).toInt().coerceIn(0,(bounds.height()-size).coerceAtLeast(0))
                             runCatching { wm.updateViewLayout(v,params) }
-                        }
-                        dragged
+                        } else if (!longPressed) v.performClick()
+                        v.isPressed = false
+                        true
                     }
                     MotionEvent.ACTION_UP -> {
                         if (dragged) {
