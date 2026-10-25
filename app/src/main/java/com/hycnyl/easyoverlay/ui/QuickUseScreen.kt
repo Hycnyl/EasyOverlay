@@ -25,12 +25,14 @@ import com.hycnyl.easyoverlay.domain.OverlayOwner
     var opacity by remember(selection,vm.maxOpacity) {mutableIntStateOf((selection?.opacityPercent ?: 60).coerceAtMost(vm.maxOpacity))}
     val session=runtime.sessions[display]
     val manual=session?.target?.owner==OverlayOwner.QUICK_USE
-    LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(start=20.dp,end=20.dp,top=12.dp,bottom=28.dp),verticalArrangement=Arrangement.spacedBy(20.dp)) {
+    val pending=display in runtime.pendingDisplays
+    Column(Modifier.fillMaxSize()) {
+    LazyColumn(Modifier.weight(1f),contentPadding=PaddingValues(start=20.dp,end=20.dp,top=12.dp,bottom=16.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
         item {Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {Text("你的图片，随屏而行",style=MaterialTheme.typography.headlineMedium)
             Text("选图 · 调整 · 显示。无需绑定应用。",style=MaterialTheme.typography.bodyLarge,color=MaterialTheme.colorScheme.onSurfaceVariant)}}
         item {RuntimeBanner(runtime,onDiagnostics)}
-        item {DisplaySelector(displays,display,{display=it})}
-        item {AssetPreview(asset,vm.container,opacity=opacity/100f)}
+        if(displays.size>1)item {DisplaySelector(displays,display,{display=it})}
+        item {AssetPreview(asset,vm.container,height=if(asset==null)160.dp else 190.dp,opacity=opacity/100f)}
         item {Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
             if(asset!=null)Text("${asset.width} × ${asset.height} · ${if(asset.isAnimatedGif)"GIF 动图" else asset.mimeType.substringAfter('/').uppercase()} · 显示时适配全屏，可能拉伸",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement=Arrangement.spacedBy(8.dp),modifier=Modifier.fillMaxWidth()) {
@@ -41,13 +43,17 @@ import com.hycnyl.easyoverlay.domain.OverlayOwner
         }}
         item {SectionCard("让下层操作保持顺畅") {OpacityControl(opacity,vm.maxOpacity,{opacity=it},{if(asset!=null)vm.quickOpacity(display,opacity)})}}
         if(runtime.autoMonitoring)item {Text("手动优先：启动快速使用后，本屏自动规则暂停；停止后按最新前台应用恢复。",style=MaterialTheme.typography.bodyMedium,color=MaterialTheme.colorScheme.onSurfaceVariant)}
-        item {Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
-            Button(onClick={start(display)},enabled=asset!=null && busy==null,modifier=Modifier.fillMaxWidth().heightIn(min=56.dp)) {
-                Icon(Icons.Default.PlayArrow,null);Spacer(Modifier.width(8.dp));Text(if(manual)"重新应用快速遮罩" else "显示遮罩")
-            }
-            if(manual || display in runtime.pendingDisplays)OutlinedButton(onClick={vm.stopQuick(display)},modifier=Modifier.fillMaxWidth().heightIn(min=52.dp)) {Icon(Icons.Default.Stop,null);Spacer(Modifier.width(8.dp));Text("停止快速遮罩")}
-            runtime.failures[display]?.let {Text(it,color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodyMedium)}
-        }}
+        runtime.failures[display]?.let {failure->item {Text(failure,color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodyMedium)
+            TextButton(onClick={start(display)}){Text("重试显示")}}}
         item {Text("关闭后可从应用或会话通知重新控制。系统安全页面可能限制显示；后台持续运行取决于系统与设备设置。",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)}
+    }
+    Surface(tonalElevation=2.dp) {
+        Button(onClick={if(manual || pending)vm.stopQuick(display) else start(display)},
+            enabled=manual || pending || (asset!=null && busy==null),
+            modifier=Modifier.fillMaxWidth().padding(horizontal=20.dp,vertical=12.dp).heightIn(min=56.dp)) {
+            Icon(if(manual || pending)Icons.Default.Stop else Icons.Default.PlayArrow,null);Spacer(Modifier.width(8.dp))
+            Text(if(manual)"停止快速遮罩" else if(pending)"取消启动" else "显示遮罩")
+        }
+    }
     }
 }

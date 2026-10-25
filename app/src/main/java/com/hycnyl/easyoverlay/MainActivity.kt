@@ -8,6 +8,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.SideEffect
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.core.view.WindowCompat
+import com.hycnyl.easyoverlay.data.ThemeChoice
 import com.hycnyl.easyoverlay.platform.HardwareCapture
 import com.hycnyl.easyoverlay.ui.*
 
@@ -18,6 +22,13 @@ class MainActivity:ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val settings by model.settings.collectAsStateWithLifecycle()
+            val dark=when(settings.theme){ThemeChoice.SYSTEM->isSystemInDarkTheme();ThemeChoice.LIGHT->false;ThemeChoice.DARK->true}
+            SideEffect {
+                WindowCompat.getInsetsController(window,window.decorView).apply {
+                    isAppearanceLightStatusBars=!dark
+                    isAppearanceLightNavigationBars=!dark
+                }
+            }
             EasyOverlayTheme(settings.theme) {EasyOverlayApp(model)}
         }
     }
