@@ -5,10 +5,10 @@
 ## 云端与独立 CI
 
 - 已实际构建原版 5.2 Debug APK，基线 lint 有 14 个错误、122 个警告；见 BUILD_BASELINE_REPORT.md。
-- 新版 JVM / Robolectric 共 **30 项测试通过，0 失败、0 跳过**。
+- 新版 JVM / Robolectric 共 **32 项测试通过，0 失败、0 跳过**。
 - 全新 Debug 构建、单元测试和 lint 已实际通过；清理旧资源后的 lint 为 **0 错误、13 警告**。
 - 独立 GitHub Actions 成功运行：
-  https://github.com/Hycnyl/EasyOverlay/actions/runs/40214417173 ，源码 `1646bc2`。
+  https://github.com/Hycnyl/EasyOverlay/actions/runs/40217159969 ，源码 `8ce6ec0`。
 - 覆盖：系统 opacity 上限、快速 A/B 切换、迟到 pause、多 Activity、手动优先、跨屏隔离、
   关闭手动后按最新前台恢复、权限撤销、过时图片丢弃、坏图保留旧会话、服务初始化竞态、
   原子保存、并发保存、损坏索引保护、共享资产引用、迁移默认项/冲突/幂等键、PNG alpha、
@@ -37,7 +37,21 @@ System UI ANR 与 Bluetooth 系统进程崩溃；这些不能当作真实设备�
 - Usage Access 保持 default / 未授权，手动启动会话：成功。
 - dumpsys 确认服务前台类型 `0x40000000`（specialUse），通知 ID 601，含停止动作。
 - dumpsys 确认普通 TYPE_APPLICATION_OVERLAY 窗口，`alpha=0.6`，
-  `NOT_FOCUSABLE | NOT_TOUCHABLE`。模拟器进一步操作检查随最终发行补充。
+  `NOT_FOCUSABLE | NOT_TOUCHABLE`。
+
+这次软件模拟器随后报告 `invalid color buffer` 和 QEMU CPU 线程挂起，以 134
+退出。这不是应用 Java 崩溃记录。关闭 Vulkan、使用 OpenGL 软件后端重试后：
+
+- 同签名更新成功，上次选择的私有 PNG 保留，重启后未误报旧窗口仍在运行。
+- 实际窗口达到 `HAS_DRAWN` / `isVisible=true` / `mShownAlpha=0.6`。
+- 切换至时钟应用，手动遮罩继续显示；在遮罩下点击，成功从 Clock 切换到 Stopwatch。
+- 返回 EasyOverlay，点击停止后，窗口移除、服务退出、UI 显示已关闭，最近图片保留。
+- 系统设置首页主动隐藏普通悬浮窗，WMS 记录 `mForceHideNonSystemOverlayWindow=true`；
+  离开该系统页面后遮罩恢复。这是平台安全限制，不尝试绕过。
+
+这些结果仅证明该标准模拟器配置，不能替代真实 Android 设备兼容性。
+
+运行截图见 [screenshots](screenshots/)。
 
 界面检查发现并修复：浅色主题系统栏图标对比度；小屏启动按钮需多次滚动。
 快速使用的显示/停止按钮现固定在底部，预览与设置保持可滚动。

@@ -1,18 +1,20 @@
-# Regression matrix
+# EasyOverlay 6.0 回归矩阵
 
-Status vocabulary: PASS = actually executed; PENDING = not executed. JVM tests and
-APK inspection cannot establish hardware behavior.
+自动化、标准模拟器和真实设备结果不能互相替代。详细证据见 VALIDATION.md。
 
-| Area | Required evidence | Initial status |
+| 范围 | 已执行结果 | 仍待真实设备验证 |
 |---|---|---|
-| Quick use | No Usage Access required; persistent image; accurate mounted state | PENDING |
-| Formats | PNG alpha, JPEG, static WebP, animated GIF; reject corrupt/animated WebP | PENDING |
-| Touch | Window alpha equals slider; taps pass through on API 33–36 | PENDING (device) |
-| Replacement | Failed decode preserves existing window; stale load discarded | PENDING |
-| Rules | A→B→C, home, self, pause/resume; manual per-display priority | PENDING |
-| Storage | Atomic index, no source deletion, ref-safe cleanup, retry migration | PENDING |
-| Displays | Rotation, removal, independent manual sessions | PENDING (device) |
-| Advanced | Hardware keys, tile, floating ball, optional accessibility | PENDING (device) |
-| FGS | User initiation, specialUse, notification stop, revocation, process death | PENDING (device) |
-| Branding | APK identity, version, icon, component names, coexistence | PENDING |
-| Distribution | One signed universal APK, SHA-256, source and licenses | PENDING |
+| 快速使用 | API 35 模拟器：无 Usage Access 的系统选图、私有 PNG 预览、启动、停止、更新保留图片通过 | API 33/34/35/36 代表设备 |
+| 图片格式 | 原生图形 Robolectric：PNG alpha、JPEG、静态 WebP、GIF 原字节保留通过；损坏/超大/动态 WebP 拒绝通过 | 动画全程、异常图形文件和设备内存边界 |
+| 透明度与触摸 | 系统阈值纯函数测试通过；模拟器窗口 alpha=0.6，遮罩下时钟页面点击通过 | 游戏触摸、其它 opacity、厂商规则 |
+| 安全替换 | 协调器异步准备、失败保留、过时结果释放测试通过 | 真机窗口失败/旋转/连续换图 |
+| 自动规则 | A/B 快切、迟到 pause、多 Activity、手动优先、停止后最新前台恢复、权限撤销、再次切换恢复测试通过 | UsageStats 真实性、ROM、多窗口、通知栏与锁屏 |
+| 存储与迁移 | 原子索引、并发保存、损坏保护、引用删除保护、旧默认/冲突/稳定键、ZIP 路径和版本检查通过 | 用户真实旧 SAF 目录导入、文件提供程序中断 |
+| 双屏 | 解析器每屏隔离、主屏自动规则不猜测副屏测试通过 | 真实副屏、热插拔、刘海与显示旋转 |
+| 高级控制 | 统一协调器接口、实体键服务、磁贴与默认关闭悬浮球已实现并编译/lint | 实体键、磁贴、悬浮球和不同设备行为 |
+| FGS | API 35 模拟器 specialUse 用户启动/停止通过；无 dataSync；系统设置页隐藏遮罩符合平台限制 | 长期运行、通知拒绝、厂商省电、系统重建 |
+| 品牌与升级 | APK 正式 ID/名称/600/6.0 已检查；模拟器同签名更新保留图片通过 | 与原版同时安装、实际用户升级与重装 |
+| 发行 | 签名、GPL、SHA-256、四种 ABI 和 16 KB APK 对齐检查通过 | 每种 ABI 的真实安装/运行 |
+
+首次 SwiftShader/Vulkan 软件模拟器出现图形缓冲/QEMU 错误。关闭 Vulkan 后完成上述
+模拟器检查。没有使用模拟器结果声称任何真实设备已经通过。
