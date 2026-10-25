@@ -1,17 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.EasyOverlay" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
-        <item name="android:colorBackground">@color/io_bg</item>
-        <item name="android:textColorPrimary">@color/io_text_primary</item>
-        <item name="android:textColorSecondary">@color/io_text_secondary</item>
+    <style name="Theme.EasyOverlay" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowBackground">@color/easy_splash_background</item>
+        <item name="android:windowSplashScreenBackground">@color/easy_splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_easyoverlay_foreground</item>
     </style>
-
-    <!-- 使用自定义 Toolbar 的页面 -->
-    <style name="Theme.EasyOverlay.NoActionBar" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
-        <item name="android:colorBackground">@color/io_bg</item>
-        <item name="android:textColorPrimary">@color/io_text_primary</item>
-        <item name="android:textColorSecondary">@color/io_text_secondary</item>
-    </style>
-</resources> 
+</resources>

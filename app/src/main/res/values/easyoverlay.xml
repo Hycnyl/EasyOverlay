@@ -1,1 +1,4 @@
-<resources><color name="easy_icon_background">#143D34</color></resources>
+<resources>
+    <color name="easy_icon_background">#143D34</color>
+    <color name="easy_splash_background">#F3FAF4</color>
+</resources>

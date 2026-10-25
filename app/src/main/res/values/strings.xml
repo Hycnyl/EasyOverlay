@@ -1,40 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">EasyOverlay</string>
-    <string name="select_image">选择图片</string>
-    <string name="start_overlay">启动遮罩</string>
-    <string name="stop_overlay">关闭遮罩</string>
-    <string name="tab_quick_use">快速使用</string>
-    <string name="tab_config">建立配置</string>
-    <string name="tab_settings">设置</string>
-    <string name="tile_default_toggle">EasyOverlay</string>
-    <string name="tile_mode_both_on">双屏开</string>
-    <string name="tile_mode_main_on">上屏开</string>
-    <string name="tile_mode_secondary_on">下屏开</string>
-    <string name="tile_mode_all_off">全部关闭</string>
-    <string name="tile_settings">磁贴设置</string>
-    <string name="toggle_overlay">开启/关闭遮罩</string>
-    <string name="key_bind_overlay_main">开启/关闭主屏遮罩</string>
-    <string name="key_bind_overlay_secondary">开启/关闭副屏遮罩</string>
-    <string name="key_bind_floating_ball">显示/隐藏悬浮球</string>
-    <string name="key_bind_overlay_prev">切换上一个遮罩</string>
-    <string name="key_bind_overlay_next">切换下一个遮罩</string>
-    <string name="key_bind_overlay_no_more">没有更多了</string>
-    <string name="adjust_opacity">调整透明度</string>
-    <string name="cancel">取消</string>
-    <string name="apply">应用</string>
-    <string name="tab_secondary_display">副屏配置</string>
-    <string name="accessibility_keybinding_desc">监听实体按键以切换遮罩开关。需要开启无障碍服务权限。</string>
-    <string name="floating_ball_icon_desc">遮罩悬浮球</string>
-    <string name="floating_ball_expand_desc">展开悬浮球</string>
-    <string name="quick_use_screen_main">主屏</string>
-    <string name="quick_use_screen_secondary">副屏</string>
-    <string name="quick_use_preset_active_main">请先关闭主屏预设配置</string>
-    <string name="quick_use_preset_active_secondary">请先关闭副屏预设配置</string>
-    <string name="floating_ball_enabled">已开启悬浮球</string>
-    <string name="floating_ball_disabled">已关闭悬浮球</string>
-    <string name="floating_ball_foreground_app">前台应用：%1$s\n%2$s</string>
-    <string name="floating_ball_no_bound_groups">当前屏无绑定到该应用的配置组</string>
-    <string name="floating_ball_tab_main">主屏</string>
-    <string name="floating_ball_tab_secondary">副屏</string>
-</resources> 
+    <string name="hardware_service_name">EasyOverlay 实体键快捷操作</string>
+    <string name="accessibility_keybinding_desc">仅监听用户绑定的实体按键以切换 EasyOverlay 遮罩。不读取窗口内容，不作为应用切换或触摸穿透的必要条件。</string>
+</resources>
