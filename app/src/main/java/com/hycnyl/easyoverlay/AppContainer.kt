@@ -31,6 +31,10 @@ class AppContainer(private val context: Context) {
     fun maximumAlpha(): Float = overlayCapabilities.maximumAlpha()
     val maximumPercent: Int get() = overlayCapabilities.maximumPercent()
     init {
+        scope.launch { if(recovery.honorUserStop()) {
+            runCatching {preferences.setAutoRequested(false)}
+            events.record("RECOVERY_USER_STOPPED")
+        } }
         scope.launch { library.load(); events.record("APP_READY") }
         scope.launch { settings.map { it.monitoringMode }.distinctUntilChanged().collect { mode ->
             monitoring.setMode(runCatching { MonitoringMode.valueOf(mode) }.getOrDefault(MonitoringMode.AUTO))

@@ -20,6 +20,25 @@ class SessionRecoveryStore(private val context: Context) {
     private var processRestoreDecision: RestoreDecision? = null
     val autoWanted: Boolean get() = preferences.getBoolean("wanted", false)
 
+    private fun mostRecentUserStop(): ApplicationExitInfo? = runCatching {
+        context.getSystemService(ActivityManager::class.java)
+            .getHistoricalProcessExitReasons(context.packageName,0,32)
+            .filter {it.processName==context.packageName && (it.reason==ApplicationExitInfo.REASON_USER_REQUESTED || it.reason==ApplicationExitInfo.REASON_USER_STOPPED)}
+            .maxByOrNull {it.timestamp}
+    }.getOrNull()
+
+    /** A provider-only wake must also persist an earlier user stop before a later system exit hides it. */
+    suspend fun honorUserStop(): Boolean = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            if(!autoWanted)return@withLock false
+            val stopped=mostRecentUserStop() ?: return@withLock false
+            if(stopped.timestamp<preferences.getLong("user_start_at",0))return@withLock false
+            preferences.edit().putBoolean("wanted",false).commit()
+            processRestoreDecision=RestoreDecision.USER_STOPPED
+            true
+        }
+    }
+
     suspend fun userRequested(enabled: Boolean) = withContext(Dispatchers.IO) {
         mutex.withLock {
             processRestoreDecision = null
@@ -36,17 +55,11 @@ class SessionRecoveryStore(private val context: Context) {
             // Count that as one recovery start, not two independent crashes.
             processRestoreDecision?.let { return@withLock it }
             val now = System.currentTimeMillis()
-            val latest = runCatching {
-                context.getSystemService(ActivityManager::class.java)
-                    .getHistoricalProcessExitReasons(context.packageName, 0, 8)
-                    .filter { it.processName == context.packageName }.maxByOrNull { it.timestamp }
-            }.getOrNull()
-            val userExit = latest?.reason == ApplicationExitInfo.REASON_USER_REQUESTED ||
-                latest?.reason == ApplicationExitInfo.REASON_USER_STOPPED
+            val stopped = mostRecentUserStop()
             val window = preferences.getLong("restore_window", 0)
             val attempts = preferences.getInt("restore_attempts", 0)
             val decision = SessionRestorePolicy.decide(autoWanted,
-                preferences.getLong("user_start_at", 0), latest?.timestamp ?: -1, userExit,
+                preferences.getLong("user_start_at", 0), stopped?.timestamp ?: -1, stopped!=null,
                 window, attempts, now)
             when (decision) {
                 RestoreDecision.USER_STOPPED -> preferences.edit().putBoolean("wanted", false).commit()
