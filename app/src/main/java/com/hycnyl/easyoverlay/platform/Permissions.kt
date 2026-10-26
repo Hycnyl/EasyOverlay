@@ -2,6 +2,7 @@ package com.hycnyl.easyoverlay.platform
 
 import android.Manifest
 import android.app.AppOpsManager
+import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -18,7 +19,9 @@ object Permissions {
             AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName) == AppOpsManager.MODE_ALLOWED
     }.getOrDefault(false)
     fun notifications(context: Context) = context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED &&
-        NotificationManagerCompat.from(context).areNotificationsEnabled()
+        NotificationManagerCompat.from(context).areNotificationsEnabled() &&
+        context.getSystemService(NotificationManager::class.java).getNotificationChannel(OverlaySessionService.CHANNEL)
+            ?.importance != NotificationManager.IMPORTANCE_NONE
     fun accessibility(context: Context): Boolean {
         val component = ComponentName(context.packageName, "${context.packageName}.platform.HardwareKeyService")
         return Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)

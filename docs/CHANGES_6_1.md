@@ -50,3 +50,15 @@ lint、核对 APK 身份/签名/架构。在可用模拟器上检查升级、语
 - 图标彩色前景以中心为轴缩放到原主体的 70%，单独的 Android 单色动态主题图标采用相同尺寸，并检查安全区。
 - 设置页最下方放置关于入口。关于页展示名称、简介、作者 Hycnyl（链接主页）和仓库地址（链接仓库），许可证与上游致谢保留。
 - 减少不必要的代理调用；恢复后不再启动子代理，核心集成、验证、修复与交付由主代理完成。
+
+## 特权恢复的实测修正
+
+真实 Shizuku / Dhizuku 模拟器接入发现，普通通知权限撤销会终止客户端 UID。
+Shizuku 的恢复先处理使用情况模式/电池白名单，再使用 shell 获准的专用无终止通知
+撤销接口；不支持该接口的系统保留恢复点、明确提示到系统设置处理，不冒险中断余下恢复。
+Dhizuku 将实际授权和管理策略的恢复放入同一管理方 Binder 事务；若系统关闭客户端，
+重新打开后只读核对保存的恢复请求，完全一致才清除恢复点，不自动覆盖后来改过的设置。
+
+接口依据（Android 13 与 15 源码均有该接口）：
+- https://github.com/aosp-mirror/platform_frameworks_base/blob/android-13.0.0_r1/core/java/android/permission/PermissionManager.java
+- https://github.com/aosp-mirror/platform_frameworks_base/blob/android-15.0.0_r1/core/java/android/permission/PermissionManager.java

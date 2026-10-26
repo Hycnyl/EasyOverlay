@@ -141,7 +141,7 @@ class OverlaySessionService : Service() {
     }
 
     companion object {
-        private const val CHANNEL = "easyoverlay_session_v1"
+        internal const val CHANNEL = "easyoverlay_session_v1"
         private const val NOTIFICATION_ID = 601
         private const val PREFIX = "com.hycnyl.easyoverlay."
         const val START_QUICK = PREFIX + "START_QUICK"

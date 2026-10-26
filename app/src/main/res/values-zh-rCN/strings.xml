@@ -361,7 +361,7 @@
     <string name="device_owner_status">设备所有者：%1$s · 配置文件所有者：%2$s</string>
     <string name="optimization_unchanged">%1$s — 无需改动</string>
     <string name="restore_confirmation">恢复为 EasyOverlay 保存的通知权限、使用情况访问模式及系统电池白名单。仅恢复此次优化改动过的设置。</string>
-    <string name="restore_dhizuku_confirmation">恢复为 EasyOverlay 保存的通知授权及管理员策略。</string>
+    <string name="restore_dhizuku_confirmation">恢复为 EasyOverlay 保存的通知授权及管理员策略。撤销通知权限时 Android 可能关闭本应用，重新打开后会核对并完成恢复。</string>
     <string name="diag_monitoring">首选检测来源：%1$s；实际来源：%2$s；回退原因：%3$s</string>
     <string name="diag_privileged">无障碍已连接：%1$s；Shizuku：%2$s；Dhizuku：%3$s</string>
     <string name="diag_backend">可信遮罩：%1$s；普通窗口上限：%2$d%%；恢复状态：%3$s</string>
@@ -372,4 +372,5 @@
     <string name="privileged_query_timeout">特权查询超时，将在可用时采用回退来源。</string>
     <string name="privileged_probe_failed">服务无法读取前台任务，请检查其状态或选择其他来源。</string>
     <string name="privileged_starting">正在启动特权辅助服务…</string>
+    <string name="notification_restore_manual">系统未能安全恢复通知权限，请在系统设置中调整后重试恢复。原设置记录仍会保留。</string>
 </resources>

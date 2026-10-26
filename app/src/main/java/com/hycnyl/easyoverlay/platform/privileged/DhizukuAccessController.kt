@@ -69,6 +69,7 @@ class DhizukuAccessController(private val context: Context, private val scope: C
                 owner?.let { runCatching { manager.isDeviceOwnerApp(it) }.getOrDefault(false) } ?: false,
                 owner?.let { runCatching { manager.isProfileOwnerApp(it) }.getOrDefault(false) } ?: false,
                 runCatching { Dhizuku.getVersionCode() }.getOrNull(), if (granted) null else "DHIZUKU_PERMISSION_REQUIRED")
+            if(granted)verifyPendingRestore()
         }
     }
 
@@ -142,15 +143,29 @@ class DhizukuAccessController(private val context: Context, private val scope: C
             val service = helper()
             val current = decodePreview(gate.call(8000) { service.notificationSnapshot() }, true)
             check(current.ownerPackage == original.ownerPackage) { "DEVICE_OWNER_CHANGED" }
-            if (original.originalGrantState == DevicePolicyManager.PERMISSION_GRANT_STATE_DEFAULT) {
-                // DEFAULT only removes policy-fixed; first restore the original actual grant, then release policy control.
-                gate.call(10000) { service.setOwnNotificationGrant(if (original.notificationGranted) DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED else DevicePolicyManager.PERMISSION_GRANT_STATE_DENIED) }
-            }
-            val after = decodePreview(gate.call(10000) { service.setOwnNotificationGrant(original.originalGrantState) }, true)
+            store.write(raw.put("restoreRequested",true))
+            val after = decodePreview(gate.call(20000) { service.restoreOwnNotificationGrant(raw.toString()) }, true)
             val restored = after.originalGrantState == original.originalGrantState && after.notificationGranted == original.notificationGranted
             if (restored) { store.clear(); _canRestore.value = false }
             OptimizationResult(listOf(OptimizationItemResult("notification", if (restored) "RESTORED" else "FAILED", restored)), true)
         } finally { withContext(Dispatchers.Main.immediate) { releaseHelper() } }
+    }
+
+    /** Complete only verification after a user-requested restore killed the client UID. No policy is changed here. */
+    private suspend fun verifyPendingRestore() = operations.withLock {
+        val raw=runCatching {store.read()}.getOrNull() ?: return@withLock
+        if(!raw.optBoolean("restoreRequested",false))return@withLock
+        try {
+            val original=decodePreview(raw.toString(),true)
+            val service=helper()
+            val current=decodePreview(gate.call(8000){service.notificationSnapshot()},true)
+            if(current.originalGrantState==original.originalGrantState && current.notificationGranted==original.notificationGranted && current.ownerPackage==original.ownerPackage) {
+                store.clear();_canRestore.value=false
+            }
+        } catch(_:TimeoutCancellationException) { /* Keep the restore point for an explicit retry. */ }
+        catch(cancel:CancellationException){throw cancel}
+        catch(_:Exception){ /* A failed verification never discards the original settings. */ }
+        finally {withContext(Dispatchers.Main.immediate){releaseHelper()}}
     }
 
     fun close() { closed = true; main.post { releaseHelper(); gate.close() } }

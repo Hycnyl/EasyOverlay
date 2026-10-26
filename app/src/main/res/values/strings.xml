@@ -365,7 +365,7 @@
     <string name="device_owner_status">Device Owner: %1$s · Profile Owner: %2$s</string>
     <string name="optimization_unchanged">%1$s — no change needed</string>
     <string name="restore_confirmation">Restore the saved notification permission, Usage Access modes and system battery whitelist for EasyOverlay. Only settings changed by this optimization will be restored.</string>
-    <string name="restore_dhizuku_confirmation">Restore the saved notification grant and administrator policy for EasyOverlay.</string>
+    <string name="restore_dhizuku_confirmation">Restore the saved notification grant and administrator policy for EasyOverlay. Android may close this app when notification permission is revoked. Reopen it to verify and finish the restoration.</string>
     <string name="diag_monitoring">Requested source: %1$s; selected: %2$s; fallback: %3$s</string>
     <string name="diag_privileged">Accessibility connected: %1$s; Shizuku: %2$s; Dhizuku: %3$s</string>
     <string name="diag_backend">Trusted overlay: %1$s; ordinary limit: %2$d%%; recovery: %3$s</string>
@@ -375,4 +375,5 @@
     <string name="privileged_query_timeout">The privileged query timed out. A fallback is used when available.</string>
     <string name="privileged_probe_failed">The service could not read foreground tasks. Check its status or choose another source.</string>
     <string name="privileged_starting">Starting the privileged helper…</string>
+    <string name="notification_restore_manual">The system could not safely restore notification permission. Review it in system settings, then retry restoration. The restore point is kept.</string>
 </resources>

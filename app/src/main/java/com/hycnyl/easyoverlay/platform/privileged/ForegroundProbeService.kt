@@ -113,11 +113,11 @@ class ForegroundProbeService : IPrivilegedProbe.Stub {
         }
         val user = (original.uid / 100000).toString()
         fun command(vararg args: String) { val result = shell.run(*args); check(result.exitCode == 0) { "COMMAND_FAILED" } }
-        item("notification") {
+        val notification: () -> String = {
             when {
                 original.notificationGranted -> "UNCHANGED_ORIGINALLY_GRANTED"
                 restore && !before.notificationGranted -> "ALREADY_RESTORED"
-                restore -> { command("/system/bin/pm", "revoke", "--user", user, ownPackage, "android.permission.POST_NOTIFICATIONS"); check(!ownStatus().notificationGranted); "RESTORED" }
+                restore -> { revokeNotificationWithoutKillingClient(original.uid / 100000); check(!ownStatus().notificationGranted); "RESTORED" }
                 before.notificationGranted -> "ALREADY_ENABLED"
                 else -> { command("/system/bin/pm", "grant", "--user", user, ownPackage, "android.permission.POST_NOTIFICATIONS"); check(ownStatus().notificationGranted); "APPLIED" }
             }
@@ -147,7 +147,17 @@ class ForegroundProbeService : IPrivilegedProbe.Stub {
                 else -> { command("/system/bin/cmd", "deviceidle", "whitelist", "+$ownPackage"); check(ownStatus().batteryUserWhitelisted); "APPLIED" }
             }
         }
+        // Notification revocation normally kills the client UID. Use the shell's dedicated
+        // no-kill API; an unsupported OEM reports failure and retains the restore point.
+        item("notification", notification)
         return JSONObject().put("restored", restore).put("items", results).toString()
+    }
+
+    private fun revokeNotificationWithoutKillingClient(userId: Int) {
+        val type = Class.forName("android.permission.PermissionManager")
+        val manager = context?.getSystemService(type) ?: error("PERMISSION_MANAGER_UNAVAILABLE")
+        type.getMethod("revokePostNotificationPermissionWithoutKillForTest", String::class.java,
+            Int::class.javaPrimitiveType).invoke(manager, ownPackage, userId)
     }
 
     override fun destroy() {

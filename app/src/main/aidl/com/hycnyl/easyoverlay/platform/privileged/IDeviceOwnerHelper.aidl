@@ -5,4 +5,5 @@ interface IDeviceOwnerHelper {
     void onStop() = 2;
     String notificationSnapshot() = 3;
     String setOwnNotificationGrant(int grantState) = 4;
+    String restoreOwnNotificationGrant(String originalSnapshot) = 5;
 }

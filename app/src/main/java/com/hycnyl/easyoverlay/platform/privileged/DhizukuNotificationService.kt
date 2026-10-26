@@ -51,6 +51,23 @@ class DhizukuNotificationService : IDeviceOwnerHelper.Stub {
         check(manager.setPermissionGrantState(admin, ownPackage, NOTIFICATION, grantState)) { "DPM_POLICY_REJECTED" }
         status().toString()
     }
+    override fun restoreOwnNotificationGrant(originalSnapshot: String): String = identity {
+        val original=JSONObject(originalSnapshot)
+        require(original.getInt("schema")==1 && original.getString("packageName")==ownPackage && original.getInt("uid")==clientUid)
+        val policy=original.getInt("policyGrantState");require(policy in 0..2)
+        val granted=original.getBoolean("notificationGranted")
+        val before=status()
+        check(before.getString("ownerPackage")==original.getString("ownerPackage")){"DEVICE_OWNER_CHANGED"}
+        val (manager,admin)=manager()
+        // Both policy steps execute in the owner process. Revoking this app's permission may
+        // terminate the client before it could send a second Binder transaction.
+        if(policy==DevicePolicyManager.PERMISSION_GRANT_STATE_DEFAULT && before.getBoolean("notificationGranted")!=granted) {
+            check(manager.setPermissionGrantState(admin,ownPackage,NOTIFICATION,
+                if(granted)DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED else DevicePolicyManager.PERMISSION_GRANT_STATE_DENIED))
+        }
+        if(status().getInt("policyGrantState")!=policy)check(manager.setPermissionGrantState(admin,ownPackage,NOTIFICATION,policy))
+        status().toString()
+    }
     private fun <T> identity(action: () -> T): T {
         enforceClient(); val token = Binder.clearCallingIdentity()
         return try { action() } finally { Binder.restoreCallingIdentity(token) }

@@ -88,6 +88,10 @@ private fun Context.activity():Activity?=when(this){is Activity->this;is Context
     result?.let {r->AlertDialog(onDismissRequest=vm::dismissOptimizationResult,title={Text(tr(R.string.operation_result))},text={Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
         r.items.forEach {item->val label=when(item.item){"notification"->R.string.optimize_notification;"usage"->R.string.optimize_usage;else->R.string.optimize_battery}
             Text("${tr(label)}: ${tr(if(item.success)R.string.operation_success else R.string.operation_failure)}",color=if(item.success)MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error)
+            if(r.restored && item.item=="notification" && !item.success) {
+                Text(tr(R.string.notification_restore_manual),style=MaterialTheme.typography.bodySmall)
+                TextButton(onClick={permission("notifications")}){Text(tr(R.string.grant_or_open))}
+            }
         }
     }},confirmButton={TextButton(onClick=vm::dismissOptimizationResult){Text(tr(R.string.understood))}})}
 }
