@@ -285,6 +285,7 @@
     <string name="notification_channel_help">Visible overlay and automatic monitoring sessions with stop controls</string>
     <string name="notification_active">%1$d display(s) showing an overlay</string>
     <string name="notification_auto">Automatic monitoring is on · waiting for a matching app</string>
+    <string name="notification_paused">Automatic monitoring paused · open EasyOverlay to check status</string>
     <string name="notification_session">User-controlled image overlay session</string>
     <string name="stop_all">Stop all</string>
     <string name="recovery_channel">EasyOverlay recovery</string>

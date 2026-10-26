@@ -367,4 +367,5 @@
     <string name="diag_backend">可信遮罩：%1$s；普通窗口上限：%2$d%%；恢复状态：%3$s</string>
     <string name="optimization_restore_point">已保存恢复点，请先恢复原设置后再应用新的优化。</string>
     <string name="notification_still_disabled">通知权限可能已授权，但应用通知或会话通知渠道仍被禁用，请检查系统通知设置。</string>
+    <string name="notification_paused">自动监测已暂停 · 打开 EasyOverlay 检查状态</string>
 </resources>

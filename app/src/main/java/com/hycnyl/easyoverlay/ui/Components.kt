@@ -84,7 +84,8 @@ import kotlinx.coroutines.withContext
     var warning by remember { mutableStateOf(false) }
     var skip by remember { mutableStateOf(false) }
     var accepted by remember { mutableIntStateOf(value.coerceAtMost(maximum)) }
-    LaunchedEffect(value,maximum) { if(!dragging && !warning)accepted=value.coerceAtMost(maximum) }
+    var candidate by remember { mutableIntStateOf(value.coerceAtMost(maximum)) }
+    LaunchedEffect(value,maximum) { if(!dragging && !warning){accepted=value.coerceAtMost(maximum);candidate=accepted} }
     val unsafe=OpacityPolicy.requiresHighOpacityWarning(value)
     val red=if(androidx.compose.foundation.isSystemInDarkTheme())Color(0xFFFF6B6B) else Color(0xFFD32F2F)
     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
@@ -92,10 +93,10 @@ import kotlinx.coroutines.withContext
         Text(tr(R.string.opacity_percent, value),style=MaterialTheme.typography.titleLarge,color=if(unsafe)red else MaterialTheme.colorScheme.primary)
     }
     Slider(value=value.toFloat().coerceIn(0f,maximum.toFloat()),onValueChange={
-        if(!dragging){accepted=value.coerceAtMost(maximum);dragging=true};onChange(it.toInt())
+        if(!dragging){accepted=value.coerceAtMost(maximum);dragging=true};candidate=it.toInt();onChange(candidate)
     },valueRange=0f..maximum.coerceAtLeast(1).toFloat(),onValueChangeFinished={
-        if(OpacityPolicy.requiresHighOpacityWarning(value) && !suppressWarning){skip=false;warning=true}
-        else {accepted=value;onFinish()}
+        if(OpacityPolicy.requiresHighOpacityWarning(candidate) && !suppressWarning){skip=false;warning=true}
+        else {accepted=candidate;onFinish()}
         dragging=false
     },enabled=maximum>0,colors=SliderDefaults.colors(
         thumbColor=if(unsafe)red else MaterialTheme.colorScheme.primary,

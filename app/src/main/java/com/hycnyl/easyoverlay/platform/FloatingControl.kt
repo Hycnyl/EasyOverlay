@@ -60,6 +60,7 @@ class FloatingControl(private val context: Context, private val toggle: () -> Un
                         dragged
                     }
                     MotionEvent.ACTION_UP -> {
+                        v.cancelLongPress()
                         if (dragged) {
                             val bounds=wm.maximumWindowMetrics.bounds
                             params.x=if (params.x < bounds.width()/2) 0 else (bounds.width()-size).coerceAtLeast(0)

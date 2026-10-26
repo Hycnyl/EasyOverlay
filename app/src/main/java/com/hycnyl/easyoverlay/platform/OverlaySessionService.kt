@@ -61,7 +61,7 @@ class OverlaySessionService : Service() {
                 runCatching { host.resize() }.onFailure { container.events.record("DISPLAY_RESIZE_FAILED") }
                 coordinator?.offer(OverlayCommand.Refresh(false))
             } }
-            launch { container.runtime.map { Triple(it.autoMonitoring, it.sessions.size, it.pendingDisplays.size) }.distinctUntilChanged().collect { ensureForeground() } }
+            launch { container.runtime.map { listOf(it.autoMonitoring, it.sessions.size, it.pendingDisplays.size, it.monitorProblem) }.distinctUntilChanged().collect { ensureForeground() } }
             launch { while (isActive) { delay(1000); coordinator?.offer(OverlayCommand.Refresh(false)) } }
         }
     }
@@ -116,6 +116,7 @@ class OverlaySessionService : Service() {
         val state = container.runtime.value
         val text = when {
             state.sessions.isNotEmpty() -> getString(R.string.notification_active, state.sessions.size)
+            state.autoMonitoring && state.monitorProblem != null -> getString(R.string.notification_paused)
             state.autoMonitoring -> getString(R.string.notification_auto)
             else -> getString(R.string.notification_session)
         }

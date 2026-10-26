@@ -60,6 +60,7 @@ class EasyOverlayViewModel(application:Application):AndroidViewModel(application
         viewModelScope.launch {
             _busy.value=label
             try { block() }
+            catch (_:TimeoutCancellationException) { message(tr(R.string.authorization_unavailable));container.events.record("USER_OPERATION_TIMEOUT") }
             catch (cancel:CancellationException) { throw cancel }
             catch (e:Exception) {
                 val detail=e.message.orEmpty()
@@ -118,7 +119,11 @@ class EasyOverlayViewModel(application:Application):AndroidViewModel(application
     fun cutout(value:Boolean)=work(tr(R.string.busy_display_settings)) { container.preferences.setCoverCutout(value) }
     fun monitorMode(value:MonitoringMode)=work(tr(R.string.monitoring_setup)) { container.preferences.setMonitoringMode(value.name);container.monitoring.setMode(value);refreshSession() }
     fun recoverAutomatic(value:Boolean)=work(tr(R.string.recover_automatic)) { container.preferences.setRecoverAutomaticSession(value);refreshSession() }
-    fun suppressOpacityWarning(value:Boolean) { viewModelScope.launch { container.preferences.setSuppressUnsafeOpacityWarning(value) } }
+    fun suppressOpacityWarning(value:Boolean) { viewModelScope.launch {
+        try {container.preferences.setSuppressUnsafeOpacityWarning(value)}
+        catch(cancel:CancellationException){throw cancel}
+        catch(_:Exception){message(tr(R.string.operation_failed))}
+    } }
     fun previewOptimization()=work(tr(R.string.optimize_title)) { _optimization.value=container.privileged.previewOptimization() }
     fun dismissOptimization() { if (_busy.value==null) _optimization.value=null }
     fun applyOptimization()=work(tr(R.string.optimize_title)) {

@@ -17,10 +17,12 @@ import java.io.IOException
 class SessionRecoveryStore(private val context: Context) {
     private val preferences = context.getSharedPreferences("automatic_session_v2", Context.MODE_PRIVATE)
     private val mutex = Mutex()
+    private var processRestoreDecision: RestoreDecision? = null
     val autoWanted: Boolean get() = preferences.getBoolean("wanted", false)
 
     suspend fun userRequested(enabled: Boolean) = withContext(Dispatchers.IO) {
         mutex.withLock {
+            processRestoreDecision = null
             val edit = preferences.edit().putBoolean("wanted", enabled)
                 .putLong(if (enabled) "user_start_at" else "user_stop_at", System.currentTimeMillis())
                 .putInt("restore_attempts", 0).putLong("restore_window", 0)
@@ -30,6 +32,9 @@ class SessionRecoveryStore(private val context: Context) {
 
     suspend fun beginRestore(): RestoreDecision = withContext(Dispatchers.IO) {
         mutex.withLock {
+            // Sticky restart and accessibility reconnect can arrive together in one new process.
+            // Count that as one recovery start, not two independent crashes.
+            processRestoreDecision?.let { return@withLock it }
             val now = System.currentTimeMillis()
             val latest = runCatching {
                 context.getSystemService(ActivityManager::class.java)
@@ -53,7 +58,7 @@ class SessionRecoveryStore(private val context: Context) {
                 }
                 else -> Unit
             }
-            decision
+            decision.also { processRestoreDecision = it }
         }
     }
 }
