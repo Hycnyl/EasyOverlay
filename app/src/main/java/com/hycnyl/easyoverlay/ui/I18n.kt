@@ -34,7 +34,8 @@ class Strings(private val context: Context) {
         value=="SHIZUKU_QUERY_TIMEOUT" || value=="SHIZUKU_PROBE_TIMEOUT"->invoke(R.string.privileged_query_timeout)
         value=="SHIZUKU_QUERY_FAILED" || value=="SHIZUKU_PROBE_FAILED" || value=="SHIZUKU_CAPABILITY_MISSING"->invoke(R.string.privileged_probe_failed)
         value=="MONITOR_PERMISSION_MISSING"->invoke(R.string.monitor_need_source)
-        value=="WAITING_FOREGROUND_OBSERVATION"->invoke(R.string.monitor_waiting)
+        value in setOf("WAITING_FOREGROUND_OBSERVATION","USAGE_NO_FOREGROUND_EVENT","USAGE_DATA_UNAVAILABLE",
+            "SHIZUKU_NO_FOREGROUND","SHIZUKU_NO_FOREGROUND_TASK","ACCESSIBILITY_NO_FOREGROUND")->invoke(R.string.monitor_waiting)
         value=="SCREEN_LOCKED"->invoke(R.string.screen_locked)
         value=="USAGE_PERMISSION_MISSING"->invoke(R.string.usage_revoked)
         value=="OVERLAY_PERMISSION_MISSING"->invoke(R.string.overlay_revoked)

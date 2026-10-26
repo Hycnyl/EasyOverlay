@@ -62,3 +62,6 @@ Dhizuku 将实际授权和管理策略的恢复放入同一管理方 Binder 事�
 接口依据（Android 13 与 15 源码均有该接口）：
 - https://github.com/aosp-mirror/platform_frameworks_base/blob/android-13.0.0_r1/core/java/android/permission/PermissionManager.java
 - https://github.com/aosp-mirror/platform_frameworks_base/blob/android-15.0.0_r1/core/java/android/permission/PermissionManager.java
+
+用户停止判定会检查近期历史中的用户停止记录，不让较晚的系统退出覆盖先前停止意图；
+应用进程即使仅由 Provider 唤醒，也先持久化这项取消意图。明确再次开启后才重新允许恢复。
