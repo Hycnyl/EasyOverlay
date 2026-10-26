@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hycnyl.easyoverlay.R
 import com.hycnyl.easyoverlay.platform.monitoring.MonitoringMode
+import com.hycnyl.easyoverlay.platform.privileged.PrivilegedConnection
 
 private fun Context.activity():Activity?=when(this){is Activity->this;is ContextWrapper->baseContext.activity();else->null}
 
@@ -46,6 +47,7 @@ private fun Context.activity():Activity?=when(this){is Activity->this;is Context
         item {SectionCard("Shizuku",tr(R.string.shizuku_help)) {
             Text(tr(when { !shizuku.installed && !shizuku.binderAlive->R.string.not_installed;!shizuku.binderAlive->R.string.not_running;!shizuku.granted->R.string.authorization_required;else->R.string.authorized }))
             shizuku.problem?.takeIf {shizuku.granted}?.let {Text(tr.problem("SHIZUKU_${it.name}"),style=MaterialTheme.typography.bodySmall)}
+            if(shizuku.connection==PrivilegedConnection.BINDING)Text(tr(R.string.privileged_starting),style=MaterialTheme.typography.bodySmall)
             Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick={context.activity()?.let {vm.container.privileged.requestPermission(it)}},enabled=shizuku.binderAlive && !shizuku.granted){Text(tr(R.string.request_authorization))}
                 TextButton(onClick={vm.refreshPermissions()}){Text(tr(R.string.connect_retry))}

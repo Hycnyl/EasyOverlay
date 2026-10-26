@@ -50,6 +50,7 @@ class DhizukuAccessController(private val context: Context, private val scope: C
     private val store = SelfOptimizationStore(context, "dhizuku-self-notification-v1.json")
     private var proxy: IDeviceOwnerHelper? = null
     private var connection: ServiceConnection? = null
+    private var connectionToken = 0L
     private var closed = false
     private val args = DhizukuUserServiceArgs(ComponentName(context.packageName, DhizukuNotificationService::class.java.name))
 
@@ -85,23 +86,25 @@ class DhizukuAccessController(private val context: Context, private val scope: C
         withContext(Dispatchers.Main.immediate) {
             check(!closed && runCatching { Dhizuku.init(context) && Dhizuku.isPermissionGranted() }.getOrDefault(false)) { "DHIZUKU_PERMISSION_REQUIRED" }
             if (proxy == null && connection == null) {
+                val token=++connectionToken
                 val listener = object : ServiceConnection {
                     override fun onServiceConnected(name: ComponentName?, binder: IBinder?) { main.post {
-                        if (closed || binder == null) return@post
+                        if (closed || token != connectionToken || binder == null) return@post
                         proxy = IDeviceOwnerHelper.Stub.asInterface(binder)
                         _state.value = _state.value.copy(connected = true, problem = null)
-                        runCatching { binder.linkToDeath({ main.post { proxy = null; connection = null; _state.value = _state.value.copy(connected = false, problem = "DHIZUKU_BINDER_DIED"); connect() } }, 0) }
+                        runCatching { binder.linkToDeath({ main.post { if(token==connectionToken){releaseHelper();_state.value = _state.value.copy(problem = "DHIZUKU_BINDER_DIED");connect()} } }, 0) }
                     } }
-                    override fun onServiceDisconnected(name: ComponentName?) { main.post { proxy = null; connection = null; _state.value = _state.value.copy(connected = false, problem = "DHIZUKU_BINDER_DIED"); connect() } }
+                    override fun onServiceDisconnected(name: ComponentName?) { main.post { if(token==connectionToken){releaseHelper();_state.value = _state.value.copy(problem = "DHIZUKU_BINDER_DIED");connect()} } }
                 }
                 connection = listener
                 check(Dhizuku.bindUserService(args, listener)) { "DHIZUKU_BIND_FAILED" }
             }
         }
-        return withTimeout(6000) { while (proxy == null) delay(50); proxy!! }
+        return withTimeout(25000) { while (proxy == null) delay(100); proxy!! }
     }
 
     private fun releaseHelper() {
+        connectionToken++
         val old = connection; connection = null; proxy = null
         if (old != null) runCatching { Dhizuku.unbindUserService(old) }
         _state.value = _state.value.copy(connected = false)

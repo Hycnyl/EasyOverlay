@@ -371,4 +371,8 @@
     <string name="diag_backend">Trusted overlay: %1$s; ordinary limit: %2$d%%; recovery: %3$s</string>
     <string name="optimization_restore_point">A restore point is already saved. Restore it before applying another optimization.</string>
     <string name="notification_still_disabled">Notification permission may be allowed while app notifications or the session channel remain disabled. Check system notification settings.</string>
+    <string name="privileged_bind_timeout">The service took too long to start. Refresh the connection and retry.</string>
+    <string name="privileged_query_timeout">The privileged query timed out. A fallback is used when available.</string>
+    <string name="privileged_probe_failed">The service could not read foreground tasks. Check its status or choose another source.</string>
+    <string name="privileged_starting">Starting the privileged helper…</string>
 </resources>

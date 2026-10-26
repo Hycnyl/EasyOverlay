@@ -38,6 +38,8 @@ object DiagnosticFormatter {
         appendLine(tr(R.string.diag_privileged,flag(cap.accessibilityConnected),container.privileged.state.value.connection.name,
             if(container.dhizuku.state.value.granted)tr(R.string.authorized)else tr(R.string.not_connected)))
         appendLine(tr(R.string.diag_backend,flag(cap.trustedPrimaryAvailable),cap.ordinaryMaxPercent,state.restoreProblem ?: "NONE"))
+        appendLine("Shizuku: available=${container.privileged.state.value.available}, problem=${container.privileged.state.value.problem?.name ?: "NONE"}")
+        appendLine("Dhizuku: problem=${container.dhizuku.state.value.problem ?: "NONE"}")
         container.displays.displays.value.forEach { display ->
             val session=state.sessions[display.id]
             appendLine(tr(R.string.diag_display,tr.displayName(display.id),display.id,

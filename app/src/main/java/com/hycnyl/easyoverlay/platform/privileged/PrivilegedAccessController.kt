@@ -110,7 +110,7 @@ class PrivilegedAccessController(private val context: Context, private val scope
         try { Shizuku.bindUserService(args, listener) }
         catch (_: Exception) { disconnect(false); retryAfter = System.currentTimeMillis() + 3000; refreshState(PrivilegedProblem.PROBE_FAILED); return }
         bindTimeout = scope.launch {
-            delay(5000)
+            delay(20000)
             if (proxy == null && token == connectionToken) { disconnect(true); retryAfter = System.currentTimeMillis() + 3000; refreshState(PrivilegedProblem.BIND_TIMEOUT) }
         }
     }
@@ -153,8 +153,14 @@ class PrivilegedAccessController(private val context: Context, private val scope
     }
 
     private suspend fun serviceForOperation(): IPrivilegedProbe {
-        withContext(Dispatchers.Main.immediate) { ensureBound() }
-        return withTimeout(6000) { while (proxy == null) { check(_state.value.granted) { "SHIZUKU_PERMISSION_REQUIRED" }; delay(50) }; proxy!! }
+        return withTimeout(25000) {
+            while (proxy == null) {
+                withContext(Dispatchers.Main.immediate) { ensureBound() }
+                check(_state.value.granted) { "SHIZUKU_PERMISSION_REQUIRED" }
+                delay(100)
+            }
+            proxy!!
+        }
     }
 
     suspend fun previewOptimization(): OptimizationPreview = operations.withLock {
