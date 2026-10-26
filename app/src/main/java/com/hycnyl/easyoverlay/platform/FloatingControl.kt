@@ -9,6 +9,7 @@ import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.view.WindowManager
 import android.widget.TextView
+import com.hycnyl.easyoverlay.R
 import kotlin.math.abs
 
 private class ControlView(context: Context) : TextView(context) {
@@ -38,7 +39,7 @@ class FloatingControl(private val context: Context, private val toggle: () -> Un
                 text = "E"; textSize = 20f; typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
                 setTextColor(0xFFF1FFF8.toInt())
                 background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(0xFF175E51.toInt()); setStroke((2*density).toInt(),0xFFD0F0E3.toInt()) }
-                contentDescription = "EasyOverlay：轻触切换主屏遮罩，拖动移位，长按停止全部"
+                contentDescription = context.getString(R.string.control_description)
                 setOnClickListener { toggle() }
                 setOnLongClickListener { longPressed = true; stop(); true }
             }
@@ -55,9 +56,8 @@ class FloatingControl(private val context: Context, private val toggle: () -> Un
                             params.x = (startX + event.rawX-downX).toInt().coerceIn(0,(bounds.width()-size).coerceAtLeast(0))
                             params.y = (startY + event.rawY-downY).toInt().coerceIn(0,(bounds.height()-size).coerceAtLeast(0))
                             runCatching { wm.updateViewLayout(v,params) }
-                        } else if (!longPressed) v.performClick()
-                        v.isPressed = false
-                        true
+                        }
+                        dragged
                     }
                     MotionEvent.ACTION_UP -> {
                         if (dragged) {
@@ -65,7 +65,9 @@ class FloatingControl(private val context: Context, private val toggle: () -> Un
                             params.x=if (params.x < bounds.width()/2) 0 else (bounds.width()-size).coerceAtLeast(0)
                             runCatching { wm.updateViewLayout(v,params) }
                         }
-                        dragged
+                        if (!dragged && !longPressed) v.performClick()
+                        v.isPressed = false
+                        true
                     }
                     else -> false
                 }
@@ -73,5 +75,6 @@ class FloatingControl(private val context: Context, private val toggle: () -> Un
             wm.addView(control, params); view=control; manager=wm; true
         } catch (_: Exception) { close(); false }
     }
+    fun refreshText() { view?.contentDescription = context.getString(R.string.control_description) }
     fun close() { view?.let { runCatching { manager?.removeViewImmediate(it) } }; view=null; manager=null }
 }

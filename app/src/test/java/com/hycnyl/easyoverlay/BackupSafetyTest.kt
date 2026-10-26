@@ -34,4 +34,14 @@ class BackupSafetyTest {
         assertTrue(runCatching {manager.preview(Uri.fromFile(zip))}.isFailure)
         assertTrue(repo.state.value.assets.isEmpty())
     }
+    @Test fun ownVersion60BackupIgnoresRemovedMigrationBookkeeping()=runBlocking {
+        val repo=LibraryRepository(context);repo.load();val manager=BackupManager(context,repo,ImageImporter(context,repo))
+        val zip=File(context.cacheDir,"own-v60.zip")
+        val json="""{"product":"EasyOverlay","formatVersion":1,"library":{"schemaVersion":1,"assets":[],"rules":[],"quickSelections":[],"unassigned":[],"importedKeys":["old-bookkeeping-only"]}}"""
+        ZipOutputStream(zip.outputStream()).use {it.putNextEntry(ZipEntry("EasyOverlay-backup.json"));it.write(json.toByteArray());it.closeEntry()}
+        val preview=manager.preview(Uri.fromFile(zip));manager.restore(preview)
+        assertTrue(repo.state.value.assets.isEmpty());assertFalse(preview.directory.exists())
+        val exported=File(context.cacheDir,"own-v61.zip");manager.export(Uri.fromFile(exported))
+        val roundTrip=manager.preview(Uri.fromFile(exported));assertEquals(repo.state.value,roundTrip.state);roundTrip.close()
+    }
 }

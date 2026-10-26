@@ -32,7 +32,11 @@ class MainActivity:ComponentActivity() {
             EasyOverlayTheme(settings.theme) {EasyOverlayApp(model)}
         }
     }
-    override fun onStart() {super.onStart();(application as EasyOverlayApplication).container.appVisible=true}
+    override fun onStart() {
+        super.onStart()
+        (application as EasyOverlayApplication).container.appVisible=true
+        com.hycnyl.easyoverlay.platform.OverlaySessionService.restoreIfWanted(this,"APP_OPEN")
+    }
     override fun onStop() {(application as EasyOverlayApplication).container.appVisible=false;super.onStop()}
     override fun onKeyDown(keyCode:Int,event:KeyEvent):Boolean=if(HardwareCapture.handle(event))true else super.onKeyDown(keyCode,event)
     override fun onKeyUp(keyCode:Int,event:KeyEvent):Boolean=if(HardwareCapture.handle(event))true else super.onKeyUp(keyCode,event)

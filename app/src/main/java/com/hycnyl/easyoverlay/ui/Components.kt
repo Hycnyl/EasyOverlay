@@ -1,5 +1,7 @@
 package com.hycnyl.easyoverlay.ui
 
+import com.hycnyl.easyoverlay.R
+
 import android.graphics.drawable.Drawable
 import android.widget.ImageView
 import androidx.compose.foundation.Canvas
@@ -38,15 +40,17 @@ import kotlinx.coroutines.withContext
 }
 
 @Composable fun DisplaySelector(displays:List<DisplayInfo>,selected:Int,onSelect:(Int)->Unit) {
+    val tr = rememberStrings()
     if (displays.size>1 || selected !in displays.map { it.id }) {
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-            displays.forEach { display -> FilterChip(selected=selected==display.id,onClick={onSelect(display.id)},label={Text(display.label)}) }
-            if (selected !in displays.map { it.id }) AssistChip(onClick={},label={Text("屏幕 $selected 已断开，请重新选择")})
+            displays.forEach { display -> FilterChip(selected=selected==display.id,onClick={onSelect(display.id)},label={Text(tr.displayName(display.id))}) }
+            if (selected !in displays.map { it.id }) AssistChip(onClick={},label={Text(tr(R.string.display_disconnected, selected))})
         }
     }
 }
 
 @Composable fun AssetPreview(asset:OverlayAsset?,container:AppContainer,height:Dp=220.dp,opacity:Float=1f) {
+    val tr = rememberStrings()
     var failed by remember(asset?.id) { mutableStateOf(false) }
     val drawable by produceState<Drawable?>(null,asset?.id) {
         if(asset!=null) value=withContext(Dispatchers.IO) { runCatching { AssetDecoder.decode(container.library.assetFile(asset),1000,700) }
@@ -65,37 +69,62 @@ import kotlinx.coroutines.withContext
                 update={view->view.setImageDrawable(drawable);view.alpha=opacity.coerceIn(0f,1f)},modifier=Modifier.fillMaxSize().padding(12.dp))
             else if(asset==null || failed) Column(horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(12.dp)) {
                 Icon(Icons.Outlined.Image,null,Modifier.size(44.dp),tint=MaterialTheme.colorScheme.primary)
-                Text(if(failed)"图片无法预览，请重新选择" else "选择一张图片，马上开始",style=MaterialTheme.typography.bodyLarge)
-                if(asset==null)Text("PNG · JPG · 静态 WebP · GIF",style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if(failed)tr(R.string.preview_failed) else tr(R.string.preview_empty),style=MaterialTheme.typography.bodyLarge)
+                if(asset==null)Text(tr(R.string.supported_images),style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.onSurfaceVariant)
             } else CircularProgressIndicator()
         }
     }
 }
 
-@Composable fun OpacityControl(value:Int,maximum:Int,onChange:(Int)->Unit,onFinish:()->Unit={}) {
+@Composable fun OpacityControl(value:Int,maximum:Int,onChange:(Int)->Unit,onFinish:()->Unit={},
+    suppressWarning:Boolean=false,onSuppressWarning:(Boolean)->Unit={}) {
+    val tr = rememberStrings()
     var help by remember { mutableStateOf(false) }
+    var dragging by remember { mutableStateOf(false) }
+    var warning by remember { mutableStateOf(false) }
+    var skip by remember { mutableStateOf(false) }
+    var accepted by remember { mutableIntStateOf(value.coerceAtMost(maximum)) }
+    LaunchedEffect(value,maximum) { if(!dragging && !warning)accepted=value.coerceAtMost(maximum) }
+    val unsafe=OpacityPolicy.requiresHighOpacityWarning(value)
+    val red=if(androidx.compose.foundation.isSystemInDarkTheme())Color(0xFFFF6B6B) else Color(0xFFD32F2F)
     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-        Text("不透明度",style=MaterialTheme.typography.titleSmall,modifier=Modifier.weight(1f))
-        Text("$value%",style=MaterialTheme.typography.titleLarge,color=MaterialTheme.colorScheme.primary)
+        Text(tr(R.string.opacity),style=MaterialTheme.typography.titleSmall,modifier=Modifier.weight(1f))
+        Text(tr(R.string.opacity_percent, value),style=MaterialTheme.typography.titleLarge,color=if(unsafe)red else MaterialTheme.colorScheme.primary)
     }
-    Slider(value=value.toFloat().coerceIn(0f,maximum.toFloat()),onValueChange={onChange(it.toInt())},
-        valueRange=0f..maximum.coerceAtLeast(1).toFloat(),onValueChangeFinished=onFinish,enabled=maximum>0)
-    TextButton(onClick={help=true},contentPadding=PaddingValues(0.dp)) {Text("为什么最高是 $maximum%？")}
-    if(help)AlertDialog(onDismissRequest={help=false},title={Text("优先保证触摸穿透")},text={Text("Android 对普通悬浮窗有触摸安全限制。本机允许的窗口不透明度最高为 $maximum%，滑块与实际窗口使用同一数值。PNG / GIF 的透明像素仍会保留。悬浮球所在区域用于控制，可拖到屏幕边缘。")},confirmButton={TextButton(onClick={help=false}){Text("明白了")}})
+    Slider(value=value.toFloat().coerceIn(0f,maximum.toFloat()),onValueChange={
+        if(!dragging){accepted=value.coerceAtMost(maximum);dragging=true};onChange(it.toInt())
+    },valueRange=0f..maximum.coerceAtLeast(1).toFloat(),onValueChangeFinished={
+        if(OpacityPolicy.requiresHighOpacityWarning(value) && !suppressWarning){skip=false;warning=true}
+        else {accepted=value;onFinish()}
+        dragging=false
+    },enabled=maximum>0,colors=SliderDefaults.colors(
+        thumbColor=if(unsafe)red else MaterialTheme.colorScheme.primary,
+        activeTrackColor=if(unsafe)red else MaterialTheme.colorScheme.primary))
+    if(unsafe)Text(tr(R.string.unsafe_opacity_status),color=red,style=MaterialTheme.typography.bodySmall)
+    TextButton(onClick={help=true},contentPadding=PaddingValues(0.dp)) {Text(tr(R.string.opacity_limit_question, maximum))}
+    if(help)AlertDialog(onDismissRequest={help=false},title={Text(tr(R.string.touch_safety_title))},text={Text(tr(if(maximum>80)R.string.opacity_extended_help else R.string.opacity_safe_help))},confirmButton={TextButton(onClick={help=false}){Text(tr(R.string.understood))}})
+    if(warning)AlertDialog(onDismissRequest={warning=false;onChange(accepted.coerceAtMost(maximum))},
+        title={Text(tr(R.string.unsafe_opacity_title))},text={Column {
+            Text(tr(R.string.unsafe_opacity_warning))
+            Row(verticalAlignment=Alignment.CenterVertically) {Checkbox(skip,{skip=it});Text(tr(R.string.unsafe_opacity_skip))}
+        }},confirmButton={TextButton(onClick={
+            if(skip)onSuppressWarning(true);accepted=value.coerceAtMost(maximum);warning=false;onFinish()
+        }){Text(tr(R.string.unsafe_opacity_confirm))}})
 }
 
 @Composable fun RuntimeBanner(state:RuntimeState,onDiagnostics:()->Unit) {
+    val tr = rememberStrings()
     val mode=when {
-        state.sessions.values.any { it.target.owner==OverlayOwner.QUICK_USE } -> "快速使用正在显示"
-        state.sessions.isNotEmpty() -> "应用规则正在显示"
-        state.pendingDisplays.isNotEmpty() -> "正在准备图片"
-        else -> "遮罩已关闭"
+        state.sessions.values.any { it.target.owner==OverlayOwner.QUICK_USE } -> tr(R.string.quick_running)
+        state.sessions.isNotEmpty() -> tr(R.string.rule_running)
+        state.pendingDisplays.isNotEmpty() -> tr(R.string.image_preparing)
+        else -> tr(R.string.overlay_closed)
     }
     Card(onClick=onDiagnostics,colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.secondaryContainer),shape=RoundedCornerShape(20.dp)) {
         Row(Modifier.fillMaxWidth().padding(16.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
             Surface(color=if(state.sessions.isNotEmpty())MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,shape=RoundedCornerShape(50),modifier=Modifier.size(10.dp)){}
             Column(Modifier.weight(1f)) {Text(mode,style=MaterialTheme.typography.titleSmall)
-                Text("自动监测：${if(!state.autoMonitoring)"关" else if(state.monitorProblem!=null)"暂停 / 受限" else "开"} · 轻触查看诊断",style=MaterialTheme.typography.bodySmall)}
+                Text(tr(R.string.runtime_banner_detail, if(!state.autoMonitoring)tr(R.string.session_state_off) else if(state.monitorProblem!=null)tr(R.string.state_paused) else tr(R.string.session_state_on)),style=MaterialTheme.typography.bodySmall)}
         }
     }
 }

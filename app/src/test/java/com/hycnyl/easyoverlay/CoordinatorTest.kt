@@ -125,4 +125,22 @@ class CoordinatorTest {
             assertEquals(OverlayOwner.APP_RULE,state.value.sessions[0]?.target?.owner)
         } finally {co.close()}
     }
+    @Test fun recoveredAutoWaitsForProviderAndResumesWithoutUsageOrRestoringManualWindows()=runTest {
+        var connected=false
+        val library=MutableStateFlow(LibraryState(assets=listOf(asset("A")),rules=listOf(AppRule("game.a",0,"A",95)),quickSelections=listOf(QuickSelection(8,"A"))))
+        val state=MutableStateFlow(RuntimeState())
+        val co=OverlayCoordinator(this,library,Engine(),state,"self.app",{if(connected)1f else .8f},{true},{connected},{},{it},{_,_->},{},
+            monitoringSource={if(connected)"ACCESSIBILITY" else "NONE"})
+        try {
+            co.offer(OverlayCommand.SetAuto(true,restoring=true));advanceUntilIdle()
+            assertTrue(state.value.autoMonitoring);assertTrue(state.value.sessions.isEmpty())
+            assertEquals("MONITOR_PERMISSION_MISSING",state.value.monitorProblem)
+            connected=true;co.offer(OverlayCommand.Observe("game.a",1,null));advanceUntilIdle()
+            assertEquals(setOf(0),state.value.sessions.keys)
+            assertEquals(95,state.value.sessions[0]?.target?.opacityPercent)
+            assertEquals("ACCESSIBILITY",state.value.monitoringSource)
+            connected=false;co.offer(OverlayCommand.Refresh(false));advanceUntilIdle()
+            assertTrue(state.value.sessions.isEmpty());assertTrue(state.value.autoMonitoring)
+        } finally {co.close()}
+    }
 }

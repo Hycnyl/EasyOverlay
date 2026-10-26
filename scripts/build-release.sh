@@ -6,7 +6,7 @@ set -euo pipefail
 test -f "$EASYOVERLAY_SIGNING_PROPERTIES"
 bash gradlew :app:assembleRelease --stacktrace
 mkdir -p dist
-cp app/build/outputs/apk/release/app-release.apk dist/EasyOverlay-v6.0.apk
-"$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs dist/EasyOverlay-v6.0.apk
-bash scripts/verify-apk.sh dist/EasyOverlay-v6.0.apk
-(cd dist && sha256sum EasyOverlay-v6.0.apk > EasyOverlay-v6.0.sha256)
+cp app/build/outputs/apk/release/app-release.apk dist/EasyOverlay-v6.1.apk
+"$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs dist/EasyOverlay-v6.1.apk
+bash scripts/verify-apk.sh dist/EasyOverlay-v6.1.apk
+(cd dist && sha256sum EasyOverlay-v6.1.apk > EasyOverlay-v6.1.sha256)

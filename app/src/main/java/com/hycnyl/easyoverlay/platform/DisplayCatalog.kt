@@ -8,7 +8,14 @@ import android.view.Display
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-data class DisplayInfo(val id: Int, val label: String)
+data class DisplayInfo(
+    val id: Int,
+    val label: String,
+    // StateFlow must emit when the same display changes geometry, not only its ID.
+    val physicalWidth: Int = 0,
+    val physicalHeight: Int = 0,
+    val rotation: Int = 0
+)
 
 class DisplayCatalog(context: Context) : DisplayManager.DisplayListener {
     private val manager = context.getSystemService(DisplayManager::class.java)
@@ -17,7 +24,8 @@ class DisplayCatalog(context: Context) : DisplayManager.DisplayListener {
     init { manager.registerDisplayListener(this, Handler(Looper.getMainLooper())) }
     private fun read() = manager.displays.filter { it.isValid &&
         (it.displayId == Display.DEFAULT_DISPLAY || it.flags and Display.FLAG_PRIVATE == 0) }
-        .map { DisplayInfo(it.displayId, if (it.displayId == 0) "主屏" else "副屏 ${it.displayId}") }.sortedBy { it.id }
+        .map { DisplayInfo(it.displayId, if (it.displayId == 0) "主屏" else "副屏 ${it.displayId}",
+            it.mode.physicalWidth, it.mode.physicalHeight, it.rotation) }.sortedBy { it.id }
     override fun onDisplayAdded(displayId: Int) { _displays.value = read() }
     override fun onDisplayRemoved(displayId: Int) { _displays.value = read() }
     override fun onDisplayChanged(displayId: Int) { _displays.value = read() }

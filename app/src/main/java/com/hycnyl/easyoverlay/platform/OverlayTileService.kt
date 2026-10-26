@@ -7,6 +7,7 @@ import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.hycnyl.easyoverlay.EasyOverlayApplication
 import com.hycnyl.easyoverlay.MainActivity
+import com.hycnyl.easyoverlay.R
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 
@@ -18,7 +19,7 @@ class OverlayTileService : TileService() {
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).also { owner -> owner.launch {
             (application as EasyOverlayApplication).container.runtime.collectLatest { runtime ->
                 qsTile?.apply { label="EasyOverlay"; state=if (runtime.sessions.isEmpty()) Tile.STATE_INACTIVE else Tile.STATE_ACTIVE
-                    subtitle=if (runtime.sessions.isEmpty()) "轻触切换遮罩" else "${runtime.sessions.size} 屏显示中"; updateTile() }
+                    subtitle=if (runtime.sessions.isEmpty()) getString(R.string.tile_tap) else getString(R.string.notification_active,runtime.sessions.size); updateTile() }
             }
         } }
     }
@@ -26,7 +27,7 @@ class OverlayTileService : TileService() {
     override fun onClick() {
         super.onClick()
         val container=(application as EasyOverlayApplication).container
-        if (!Permissions.overlay(this) || (!container.library.ready.value || container.library.state.value.quickSelections.isEmpty()) && container.runtime.value.sessions.isEmpty()) {
+        if (!container.overlayCapabilities.canOverlay() || (!container.library.ready.value || container.library.state.value.quickSelections.isEmpty()) && container.runtime.value.sessions.isEmpty()) {
             val intent=Intent(this,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             if (Build.VERSION.SDK_INT >= 34) startActivityAndCollapse(PendingIntent.getActivity(this,0,intent,PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT))
             else startActivity(intent)

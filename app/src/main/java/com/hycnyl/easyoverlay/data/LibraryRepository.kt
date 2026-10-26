@@ -165,7 +165,7 @@ class LibraryRepository(context: Context) {
                     index.baseFile.copyTo(File(root, "protected-index-${System.currentTimeMillis()}.json"))
                 }
                 commit(current.copy(assets = current.assets + added, rules = rules, quickSelections = quick,
-                    unassigned = unassigned.distinct(), importedKeys = current.importedKeys + incoming.importedKeys))
+                    unassigned = unassigned.distinct()))
                 _problem.value = null
             } catch (e: Exception) { created.forEach { it.delete() }; throw e }
         }

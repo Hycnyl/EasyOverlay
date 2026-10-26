@@ -3,6 +3,7 @@ package com.hycnyl.easyoverlay.platform
 import android.accessibilityservice.AccessibilityService
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
+import android.content.Intent
 import com.hycnyl.easyoverlay.EasyOverlayApplication
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,10 +28,24 @@ class HardwareKeyService : AccessibilityService() {
     private val container get() = (application as EasyOverlayApplication).container
     override fun onServiceConnected() {
         super.onServiceConnected()
-        // Key filtering does not require subscribing to accessibility UI events.
-        serviceInfo = serviceInfo.apply { eventTypes = 0 }
+        AccessibilityOverlayBridge.onConnected(this)
+        container.monitoring.accessibilityConnected(this)
+        OverlaySessionService.restoreIfWanted(this, "ACCESSIBILITY_CONNECTED")
     }
-    override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        if (event != null) container.monitoring.accessibilityEvent(this, event)
+    }
+    override fun onUnbind(intent: Intent?): Boolean {
+        AccessibilityOverlayBridge.onDisconnected(this)
+        container.monitoring.accessibilityDisconnected(this)
+        return super.onUnbind(intent)
+    }
+    override fun onDestroy() {
+        AccessibilityOverlayBridge.onDisconnected(this)
+        container.monitoring.accessibilityDisconnected(this)
+        pressed.clear()
+        super.onDestroy()
+    }
     override fun onInterrupt() { pressed.clear(); fired = false }
     override fun onKeyEvent(event: KeyEvent): Boolean {
         if (HardwareCapture.active) return HardwareCapture.handle(event)

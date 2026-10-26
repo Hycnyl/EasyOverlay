@@ -44,3 +44,9 @@ lint、核对 APK 身份/签名/架构。在可用模拟器上检查升级、语
 - https://developer.android.com/develop/background-work/services/fgs/handle-user-stopping
 - https://github.com/RikkaApps/Shizuku-API
 - https://github.com/iamr0s/Dhizuku-API
+
+## 中断恢复后的补充要求
+
+- 图标彩色前景以中心为轴缩放到原主体的 70%，单独的 Android 单色动态主题图标采用相同尺寸，并检查安全区。
+- 设置页最下方放置关于入口。关于页展示名称、简介、作者 Hycnyl（链接主页）和仓库地址（链接仓库），许可证与上游致谢保留。
+- 减少不必要的代理调用；恢复后不再启动子代理，核心集成、验证、修复与交付由主代理完成。

@@ -10,7 +10,7 @@ sealed interface OverlayCommand {
     data class StopQuick(val displayId: Int) : OverlayCommand
     data class Toggle(val displayId: Int) : OverlayCommand
     data object ToggleAll : OverlayCommand
-    data class SetAuto(val enabled: Boolean) : OverlayCommand
+    data class SetAuto(val enabled: Boolean, val restoring: Boolean = false) : OverlayCommand
     data class Observe(val packageName: String?, val at: Long, val problem: String?) : OverlayCommand
     data class Displays(val ids: Set<Int>) : OverlayCommand
     data class Refresh(val retry: Boolean = true) : OverlayCommand
@@ -30,11 +30,15 @@ class OverlayCoordinator(
     private val ownPackage: String,
     private val maxAlpha: () -> Float,
     private val overlayAllowed: () -> Boolean,
-    private val usageAllowed: () -> Boolean,
+    private val monitorAllowed: () -> Boolean,
     private val monitor: (Boolean) -> Unit,
     private val floating: (Boolean) -> Boolean,
     private val log: (String, Int?) -> Unit,
-    private val onIdle: () -> Unit
+    private val onIdle: () -> Unit,
+    private val maximumAlphaForDisplay: (Int) -> Float = { maxAlpha() },
+    private val overlayAllowedForDisplay: (Int) -> Boolean = { overlayAllowed() },
+    private val monitoringSource: () -> String = { "NONE" },
+    private val unavailableMonitorCode: () -> String = { "MONITOR_PERMISSION_MISSING" }
 ) {
     private val commands = Channel<OverlayCommand>(Channel.UNLIMITED)
     private val manual = mutableMapOf<Int, OverlayTarget>()
@@ -80,8 +84,8 @@ class OverlayCoordinator(
                 } else { suppressed.clear(); displays.forEach { startQuick(it) } }
             }
             is OverlayCommand.SetAuto -> {
-                if (command.enabled && (!usageAllowed() || !overlayAllowed())) {
-                    monitorProblem = if (!usageAllowed()) "USAGE_PERMISSION_MISSING" else "OVERLAY_PERMISSION_MISSING"
+                if (command.enabled && !command.restoring && (!monitorAllowed() || !overlayAllowed())) {
+                    monitorProblem = if (!monitorAllowed()) unavailableMonitorCode() else "OVERLAY_PERMISSION_MISSING"
                     log(monitorProblem!!, null)
                 } else {
                     auto = command.enabled; foreground = null; observedAt = 0; monitorProblem = null
@@ -141,7 +145,7 @@ class OverlayCoordinator(
     }
 
     private fun startQuick(display: Int) {
-        if (display !in displays || !overlayAllowed()) { log("OVERLAY_PERMISSION_OR_DISPLAY_MISSING", display); return }
+        if (display !in displays || !overlayAllowedForDisplay(display)) { log("OVERLAY_PERMISSION_OR_DISPLAY_MISSING", display); return }
         val quick = library.value.quickSelections.firstOrNull { it.displayId == display }
         if (quick == null) { log("NO_QUICK_IMAGE", display); return }
         manual[display] = OverlayTarget(display, OverlayOwner.QUICK_USE, quick.assetId, quick.opacityPercent)
@@ -160,8 +164,10 @@ class OverlayCoordinator(
             if (manual.isNotEmpty() || engine.targets().isNotEmpty()) log("OVERLAY_PERMISSION_MISSING", null)
             manual.clear(); ball = floating(false)
         }
-        val desired = if (permitted) RuleResolver.resolve(displays, manual, library.value.rules, foreground,
-            auto && usageAllowed() && monitorProblem == null, ownPackage, maxAlpha(), suppressed) else emptyMap()
+        manual.keys.toList().filterNot { overlayAllowedForDisplay(it) }.forEach { manual.remove(it) }
+        val desired = if (permitted) RuleResolver.resolve(displays.filter { overlayAllowedForDisplay(it) }.toSet(),
+            manual, library.value.rules, foreground, auto && monitorAllowed() && monitorProblem == null,
+            ownPackage, maxAlpha(), suppressed, maximumAlphaForDisplay) else emptyMap()
         val existing = engine.targets()
         failed.keys.toList().filter { failed[it] != desired[it] }.forEach { failed.remove(it) }
         (existing.keys + pending.keys).toSet().filterNot { it in desired }.forEach { display ->
@@ -195,13 +201,13 @@ class OverlayCoordinator(
         val actual = engine.targets()
         val visibleProblem = when {
             auto && !overlayAllowed() -> "OVERLAY_PERMISSION_MISSING"
-            auto && !usageAllowed() -> "USAGE_PERMISSION_MISSING"
+            auto && !monitorAllowed() -> unavailableMonitorCode()
             else -> monitorProblem
         }
         state.value = RuntimeState(true, auto, foreground, observedAt,
             actual.mapValues { (display, target) -> ActiveOverlaySession(target, mountedAt[display] ?: 0) },
             pending.keys.toSet(), failed.mapValues { "图片准备或窗口挂载失败，已尽量保留原图。请检查图片、悬浮窗权限和目标屏幕后重试。" },
-            visibleProblem, ball)
+            visibleProblem, ball, monitoringSource())
     }
 
     fun close() {

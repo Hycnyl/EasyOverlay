@@ -1,34 +1,11 @@
-# EasyOverlay 6.0 architecture decisions
+# EasyOverlay 6.1 architecture decisions
 
-1. Android 13–16 is the supported range (minSdk 33). API 36 compile SDK, with
-   explicit specialUse foreground service declarations. A single user-started
-   service hosts manual overlays, optional foreground observation and the optional
-   floating control. No boot receiver, sticky resurrection, dataSync, network
-   permission or accessibility overlay bypass.
-2. One ordinary non-touchable overlay window per display. System InputManager
-   opacity is floored to an integer percent; the same bound governs UI and windows.
-   Images decode off the main thread. Prepared content updates the existing window;
-   a failed or obsolete request does not delete a valid previous window.
-3. One serialized coordinator owns desired state; only successful WindowManager
-   operations publish mounted sessions. Manual requests outrank rules per display.
-   Runtime sessions are never persisted as if they were mounted after process death.
-4. A small, versioned JSON library uses Android AtomicFile for a single transactional
-   index. Assets have UUID paths and content hashes. Files finish copying and
-   validation before references change. Mutations serialize under a Mutex; errors
-   are visible. Corrupt indexes are protected from automatic overwrite.
-   This is an intentionally smaller equivalent to a database for this local library.
-5. DataStore owns preferences. UI observes StateFlow through lifecycle-aware Compose.
-   Legacy import is a separate read-only SAF scanner; no legacy loader or writer
-   participates in the new app. Conflict items and unbound images remain available
-   for assignment instead of silently replacing a rule.
-6. Platform ImageDecoder handles PNG/JPEG/static WebP/animated GIF on all supported
-   Android versions. There is no separate native image codec. AndroidX transitive
-   native libraries are included for arm64-v8a, armeabi-v7a, x86 and x86_64 in the
-   same universal APK; the release verification script checks each library's ABIs.
-7. UsageStats cannot reliably identify independent frontmost packages on physical
-   secondary displays. Automatic rules apply to the default display only in V1;
-   secondary displays retain independent manual control and editable rules. UI and
-   diagnostics explain this limit.
-8. Real-device FGS, touch-through, external displays, physical keys, ROM power
-   management and Android 16 target behavior are release validation gates. Cloud
-   results are recorded separately and never substituted for device evidence.
+1. Android 13+ (minSdk 33), compileSdk 36, targetSdk 35. One visible specialUse foreground service owns manual overlays, optional automatic observation and the floating control. No dataSync lifetime timer or network permission.
+2. One non-touchable image window per display. Ordinary windows obey the InputManager opacity limit. A connected accessibility service can provide a trusted main-display token for values above the ordinary limit. Cross-type replacement uses an initially transparent window, removes the old one, then applies opacity; failures retain the prior image where safe. Disconnection clamps or removes trusted windows.
+3. A serialized coordinator owns desired/mounted state. Manual requests outrank rules. Only successful WindowManager operations publish mounted sessions; runtime window state is never restored as if still mounted.
+4. MonitoringController arbitrates Accessibility window metadata, Shizuku task snapshots and UsageStats. It drops stale epochs/results, suppresses automatic targets while locked, falls back when sources fail, and re-queries after unlock. UsageStats uses a longer cold-start history to reconstruct the latest resumed app.
+5. Shizuku runs a bounded, non-daemon UserService as shell/root. Fixed self-only optimization operations preserve original appops/notification/battery state in private AtomicFile restore points. Dhizuku provides optional own-notification policy management as Device/Profile Owner; it cannot act as a shell task reader. All privileged changes require an explicit UI preview and confirmation.
+6. Automatic recovery intent is separate from live runtime state. Only newly explicitly enabled auto sessions opt in; stopped manual sessions are never revived. IO-synchronous intent persistence, ApplicationExitInfo user-stop checks and three-start/ten-minute backoff govern sticky/boot/update/reconnect recovery. Android start restrictions remain authoritative.
+7. A versioned AtomicFile JSON index, UUID image paths and hashes preserve self-owned 6.0 data/ZIP compatibility. No upstream configuration importer remains. Conflicting backups enter the library rather than silently replace rules. DataStore owns preferences; API 33 LocaleManager persists Chinese/English selection. Both languages ship in the universal APK.
+8. Platform ImageDecoder supports PNG/JPEG/static WebP/animated GIF. AndroidX transitive libraries ship in all four ABIs. Automatic rules remain main-display only; secondary manual overlays are independent and retain ordinary opacity limits.
+9. Device-specific background policy, physical keys, external displays and targetSdk 36 remain physical-device validation items. Cloud/emulator evidence is reported separately.

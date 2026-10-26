@@ -29,8 +29,7 @@ data class UnassignedAsset(
     val label: String,
     val reason: String,
     val suggestedPackage: String? = null,
-    val displayId: Int = 0,
-    val migrationKey: String? = null
+    val displayId: Int = 0
 )
 
 data class LibraryState(
@@ -38,8 +37,7 @@ data class LibraryState(
     val assets: List<OverlayAsset> = emptyList(),
     val rules: List<AppRule> = emptyList(),
     val quickSelections: List<QuickSelection> = emptyList(),
-    val unassigned: List<UnassignedAsset> = emptyList(),
-    val importedKeys: Set<String> = emptySet()
+    val unassigned: List<UnassignedAsset> = emptyList()
 )
 
 enum class OverlayOwner { QUICK_USE, APP_RULE }
@@ -63,5 +61,7 @@ data class RuntimeState(
     val pendingDisplays: Set<Int> = emptySet(),
     val failures: Map<Int, String> = emptyMap(),
     val monitorProblem: String? = null,
-    val floatingVisible: Boolean = false
+    val floatingVisible: Boolean = false,
+    val monitoringSource: String = "NONE",
+    val restoreProblem: String? = null
 )

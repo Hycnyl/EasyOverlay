@@ -18,14 +18,16 @@ android {
         minSdk 33
         // API 36 target is gated on physical-device FGS review; see docs/FGS_ANDROID_REVIEW.md.
         targetSdk 35
-        versionCode 600
-        versionName '6.0'
+        versionCode 610
+        versionName '6.1'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     buildFeatures {
         compose true
         buildConfig true
+        aidl true
     }
+    bundle { language { enableSplit = false } }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
@@ -76,7 +78,9 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0'
     implementation 'androidx.core:core-ktx:1.16.0'
     implementation 'androidx.datastore:datastore-preferences:1.1.7'
-    implementation 'androidx.documentfile:documentfile:1.0.1'
+    implementation 'dev.rikka.shizuku:api:13.1.5'
+    implementation 'dev.rikka.shizuku:provider:13.1.5'
+    implementation 'io.github.iamr0s:Dhizuku-API:2.5.3'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
     implementation 'com.google.code.gson:gson:2.13.1'
     testImplementation 'junit:junit:4.13.2'

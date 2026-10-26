@@ -1,8 +1,12 @@
 package com.hycnyl.easyoverlay.ui
 
+import com.hycnyl.easyoverlay.R
+
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.view.KeyEvent
 import androidx.compose.foundation.horizontalScroll
@@ -23,116 +27,145 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @Composable fun SettingsScreen(vm:EasyOverlayViewModel,auto:(Boolean)->Unit,permission:(String)->Unit,navigate:(String)->Unit,
-    backupExport:()->Unit,backupImport:()->Unit,legacyImport:()->Unit,library:()->Unit) {
+    backupExport:()->Unit,backupImport:()->Unit,library:()->Unit) {
+    val tr = rememberStrings()
+    val context = LocalContext.current
     val prefs by vm.settings.collectAsStateWithLifecycle();val runtime by vm.runtime.collectAsStateWithLifecycle();val grants by vm.permissions.collectAsStateWithLifecycle()
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
-        item {Text("按你的方式使用",style=MaterialTheme.typography.headlineMedium)}
-        item {SectionCard("权限与自动监测") {
-            SettingRow("自动监测会话",if(runtime.autoMonitoring)if(runtime.monitorProblem==null)"已开启 · 手动遮罩始终优先" else "已暂停或受限 · 查看诊断" else "关闭 · 只有此功能需要 Usage Access",{auto(!runtime.autoMonitoring)}) {
+        item {Text(tr(R.string.settings_title),style=MaterialTheme.typography.headlineMedium)}
+        item {SectionCard(tr(R.string.permissions_monitoring)) {
+            SettingRow(tr(R.string.monitoring_setup),tr(R.string.monitoring_intro),{navigate("monitoring")})
+            SettingRow(tr(R.string.monitor_session),if(runtime.autoMonitoring)if(runtime.monitorProblem==null)tr(R.string.monitor_running_detail) else tr(R.string.monitor_paused_detail) else tr(R.string.monitor_off_detail),{auto(!runtime.autoMonitoring)}) {
                 Switch(runtime.autoMonitoring,{auto(it)})
             }
-            if(!runtime.serviceRunning && prefs.lastAutoRequested)Text("上次会话已结束，需要你再次主动开启。",style=MaterialTheme.typography.bodySmall)
-            SettingRow("在其他应用上层显示",if(grants.overlay)"已允许" else "启动遮罩时需要",{permission("overlay")})
-            SettingRow("使用情况访问",if(grants.usage)"已允许 · 仅自动切换使用" else "未允许 · 快速使用不受影响",{permission("usage")})
-            SettingRow("会话通知",if(grants.notifications)"已允许 · 可从通知停止遮罩" else "未允许 · 系统可能仅在“活动应用”中显示会话",{permission("notifications")})
+            if(!runtime.serviceRunning && prefs.lastAutoRequested)Text(tr(R.string.session_ended_help),style=MaterialTheme.typography.bodySmall)
+            SettingRow(tr(R.string.display_over_apps),if(grants.overlay)tr(R.string.allowed) else tr(R.string.overlay_permission_needed),{permission("overlay")})
+            SettingRow(tr(R.string.usage_access),if(grants.usage)tr(R.string.usage_allowed_detail) else tr(R.string.usage_denied_detail),{permission("usage")})
+            SettingRow(tr(R.string.session_notifications),if(grants.notifications)tr(R.string.notifications_allowed_detail) else tr(R.string.notifications_denied_detail),{permission("notifications")})
         }}
-        item {SectionCard("外观") {
+        item {SectionCard(tr(R.string.appearance)) {
             Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                listOf(ThemeChoice.SYSTEM to "跟随系统",ThemeChoice.LIGHT to "浅色",ThemeChoice.DARK to "深色").forEach {(value,label)->FilterChip(prefs.theme==value,{vm.theme(value)},label={Text(label)})}
+                listOf(ThemeChoice.SYSTEM to tr(R.string.follow_system),ThemeChoice.LIGHT to tr(R.string.theme_light),ThemeChoice.DARK to tr(R.string.theme_dark)).forEach {(value,label)->FilterChip(prefs.theme==value,{vm.theme(value)},label={Text(label)})}
             }
-            Text("支持系统动态取色和字体大小设置。",style=MaterialTheme.typography.bodySmall)
+            Text(tr(R.string.dynamic_theme_help),style=MaterialTheme.typography.bodySmall)
         }}
-        item {SectionCard("图片与备份","默认保存在应用私有空间，首次打开无需选择文件夹。卸载前请导出备份。") {
-            SettingRow("图片库 / 待分配项","查看图片、处理旧配置冲突或选择到快速使用",library)
-            SettingRow("导出 EasyOverlay 备份","包含版本化 JSON 与原始图片，不含权限和运行会话",backupExport)
-            SettingRow("导入 EasyOverlay 备份","先验证完整性，再合并；现有规则优先保留",backupImport)
-            SettingRow("从 ImageOverlay 导入","只读扫描你授权的旧目录，预览后复制图片",legacyImport)
+        item {SectionCard(tr(R.string.language_title), tr(R.string.language_help)) {
+            val selected = AppLanguages.current(context)
+            Column(verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                listOf(
+                    AppLanguage.SYSTEM to tr(R.string.follow_system),
+                    AppLanguage.SIMPLIFIED_CHINESE to tr(R.string.language_chinese),
+                    AppLanguage.ENGLISH to tr(R.string.language_english)
+                ).forEach { (language, label) ->
+                    FilterChip(selected=selected==language,onClick={AppLanguages.select(context,language)},label={Text(label)})
+                }
+            }
         }}
-        item {SectionCard("更多控制") {
-            SettingRow("诊断与帮助","权限、运行模式、最近切换与脱敏事件",{navigate("diagnostics")})
-            SettingRow("高级功能","双屏、实体按键、悬浮球与显示范围",{navigate("advanced")})
-            SettingRow("关于 EasyOverlay","${BuildConfig.VERSION_NAME} · GPL-3.0 · 非官方 Fork",{navigate("about")})
+        item {SectionCard(tr(R.string.images_backups),tr(R.string.private_storage_help)) {
+            SettingRow(tr(R.string.library_unassigned),tr(R.string.library_settings_help),library)
+            SettingRow(tr(R.string.export_backup),tr(R.string.export_backup_help),backupExport)
+            SettingRow(tr(R.string.import_backup),tr(R.string.import_backup_help),backupImport)
         }}
-        if(runtime.serviceRunning)item {OutlinedButton(onClick={vm.stopAll()},modifier=Modifier.fillMaxWidth()){Text("停止全部会话与遮罩")}}
+        item {SectionCard(tr(R.string.more_controls)) {
+            SettingRow(tr(R.string.diagnostics_title),tr(R.string.diagnostics_settings_help),{navigate("diagnostics")})
+            SettingRow(tr(R.string.advanced_title),tr(R.string.advanced_settings_help),{navigate("advanced")})
+            if(prefs.suppressUnsafeOpacityWarning)SettingRow(tr(R.string.reset_opacity_warning),tr(R.string.unsafe_opacity_status),{vm.suppressOpacityWarning(false)})
+        }}
+        if(runtime.serviceRunning)item {OutlinedButton(onClick={vm.stopAll()},modifier=Modifier.fillMaxWidth()){Text(tr(R.string.stop_all_sessions))}}
+        item {SectionCard(tr(R.string.about_title)) {SettingRow(tr(R.string.app_name),tr(R.string.about_version,BuildConfig.VERSION_NAME),{navigate("about")})}}
     }
 }
 
 @Composable fun AdvancedScreen(vm:EasyOverlayViewModel,permission:(String)->Unit,ball:(Boolean)->Unit) {
+    val tr = rememberStrings()
     val settings by vm.settings.collectAsStateWithLifecycle();val runtime by vm.runtime.collectAsStateWithLifecycle();val displays by vm.displays.collectAsStateWithLifecycle();val grants by vm.permissions.collectAsStateWithLifecycle()
     val captured by HardwareCapture.keys.collectAsStateWithLifecycle();var function by remember {mutableStateOf<String?>(null)}
     DisposableEffect(Unit){onDispose {HardwareCapture.end()}}
-    val labels=mapOf("toggle_main" to "切换主屏遮罩","toggle_secondary" to "切换副屏遮罩","toggle_all" to "切换全部屏幕","toggle_ball" to "显示 / 隐藏悬浮球")
+    val labels=mapOf("toggle_main" to tr(R.string.toggle_main),"toggle_secondary" to tr(R.string.toggle_secondary),"toggle_all" to tr(R.string.toggle_all),"toggle_ball" to tr(R.string.toggle_ball))
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
-        item {SectionCard("显示屏", "检测到 ${displays.size} 块可用屏幕。副屏支持独立快速使用；UsageStats 不能可靠判断每块屏幕的前台应用，因此 V1 仅在主屏自动切换。") {
-            displays.forEach {Text("${it.label} · ID ${it.id}")}
-            SettingRow("延伸到刘海区域","系统仍可能限制安全页面、导航条或外接屏覆盖",{vm.cutout(!settings.coverCutout)}){Switch(settings.coverCutout,{vm.cutout(it)})}
+        item {SectionCard(tr(R.string.displays), tr(R.string.displays_help, displays.size)) {
+            displays.forEach {Text(tr(R.string.display_id_label, tr.displayName(it.id), it.id))}
+            SettingRow(tr(R.string.cover_cutout),tr(R.string.cutout_help),{vm.cutout(!settings.coverCutout)}){Switch(settings.coverCutout,{vm.cutout(it)})}
         }}
-        item {SectionCard("悬浮球","默认关闭。轻触切换主屏，拖动移位并吸附边缘，长按停止全部。控件所在区域接收触摸，请避开游戏按钮。") {
-            SettingRow("显示悬浮球",if(runtime.floatingVisible)"当前已显示" else "当前关闭",{ball(!runtime.floatingVisible)}){Switch(runtime.floatingVisible,ball)}
+        item {SectionCard(tr(R.string.floating_control),tr(R.string.floating_help)) {
+            SettingRow(tr(R.string.show_ball),if(runtime.floatingVisible)tr(R.string.currently_shown) else tr(R.string.currently_off),{ball(!runtime.floatingVisible)}){Switch(runtime.floatingVisible,ball)}
         }}
-        item {SectionCard("实体键快捷操作","可选无障碍服务仅接收你绑定的按键，不读取窗口内容，不参与应用识别或绕过透明度限制。系统可能不向应用提供所有实体键。") {
-            SettingRow("实体键权限",if(grants.keys)"已允许" else "未允许 · 不影响主流程",{permission("keys")})
-            labels.forEach {(key,label)->SettingRow(label,settings.hardwareBindings[key].orEmpty().ifEmpty {emptySet()}.joinToString(" + "){KeyEvent.keyCodeToString(it).removePrefix("KEYCODE_")}.ifBlank {"未绑定"},
+        item {SectionCard(tr(R.string.hardware_shortcuts),tr(R.string.hardware_help)) {
+            SettingRow(tr(R.string.hardware_permission),if(grants.keys)tr(R.string.allowed) else tr(R.string.optional_permission_denied),{permission("keys")})
+            labels.forEach {(key,label)->SettingRow(label,settings.hardwareBindings[key].orEmpty().ifEmpty {emptySet()}.joinToString(" + "){KeyEvent.keyCodeToString(it).removePrefix("KEYCODE_")}.ifBlank {tr(R.string.not_bound)},
                 {HardwareCapture.begin();function=key})}
         }}
-        item {SectionCard("快捷设置磁贴","从系统快捷设置编辑面板添加 EasyOverlay。轻触可切换已选择的快速使用图片；正在显示时可关闭当前屏幕。无可用图片或缺少权限时会打开应用。") {}}
+        item {SectionCard(tr(R.string.quick_settings_tile),tr(R.string.tile_help)) {}}
     }
     function?.let {key->AlertDialog(onDismissRequest={HardwareCapture.end();function=null},title={Text(labels[key].orEmpty())},text={Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        Text("按下最多三个实体键，组合不能与其他绑定重叠。返回键可取消。")
-        Text(captured.joinToString(" + "){KeyEvent.keyCodeToString(it).removePrefix("KEYCODE_")}.ifBlank {"等待按键…"})
-        TextButton(onClick={vm.bind(key,emptySet());function=null}){Text("清除此绑定")}
-    }},confirmButton={TextButton(onClick={vm.bind(key,captured);HardwareCapture.end();function=null},enabled=captured.isNotEmpty()){Text("保存")}},dismissButton={TextButton(onClick={HardwareCapture.end();function=null}){Text("取消")}})}
+        Text(tr(R.string.hardware_record_help))
+        Text(captured.joinToString(" + "){KeyEvent.keyCodeToString(it).removePrefix("KEYCODE_")}.ifBlank {tr(R.string.waiting_keys)})
+        TextButton(onClick={vm.bind(key,emptySet());function=null}){Text(tr(R.string.clear_binding))}
+    }},confirmButton={TextButton(onClick={vm.bind(key,captured);HardwareCapture.end();function=null},enabled=captured.isNotEmpty()){Text(tr(R.string.save))}},dismissButton={TextButton(onClick={HardwareCapture.end();function=null}){Text(tr(R.string.cancel))}})}
 }
 
 @Composable fun DiagnosticsScreen(vm:EasyOverlayViewModel,export:()->Unit,permission:(String)->Unit) {
+    val tr = rememberStrings()
     val runtime by vm.runtime.collectAsStateWithLifecycle();val events by vm.events.collectAsStateWithLifecycle();val grants by vm.permissions.collectAsStateWithLifecycle()
     val displays by vm.displays.collectAsStateWithLifecycle();val context=LocalContext.current
+    val monitor by vm.monitoring.collectAsStateWithLifecycle();val capabilities by vm.capabilities.collectAsStateWithLifecycle()
     var reveal by remember {mutableStateOf(false)}
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
-        item {SectionCard("当前状态") {
+        item {SectionCard(tr(R.string.current_status)) {
             Text("EasyOverlay ${BuildConfig.VERSION_NAME} · Android ${Build.VERSION.RELEASE} / API ${Build.VERSION.SDK_INT}")
             Text(BuildConfig.APPLICATION_ID,style=MaterialTheme.typography.bodySmall)
-            Text("自动监测：${if(!runtime.autoMonitoring)"关闭" else if(runtime.monitorProblem==null)"开启" else "暂停 / 受限"}")
-            if(context.getSystemService(android.app.ActivityManager::class.java).isBackgroundRestricted)Text("系统已限制此应用的后台运行，离开应用后会话可能中断。请检查系统电池管理。",color=MaterialTheme.colorScheme.error)
-            runtime.monitorProblem?.let {Text(when(it){"OVERLAY_PERMISSION_MISSING"->"悬浮窗权限已撤销，自动遮罩已暂停。请重新授权。";"USAGE_PERMISSION_MISSING"->"使用情况访问权限已撤销，请重新授权。";"SCREEN_LOCKED"->"屏幕关闭或已锁定，自动规则已暂停。";"BACKGROUND_START_NOT_ALLOWED"->"系统拒绝后台启动，请回到应用重新开启。";else->"监听或权限受限，请检查系统设置并重新开启。"},color=MaterialTheme.colorScheme.error)}
-            Text("最近前台事件：${DiagnosticFormatter.time(runtime.observedAt)}")
-            Text("前台目标：${DiagnosticFormatter.packageLabel(runtime.foregroundPackage,reveal)}")
-            Row {Text("在此页显示包名",modifier=Modifier.weight(1f));Switch(reveal,{reveal=it})}
-            Text("手动快速使用优先于本屏自动规则。进程结束后不会把旧窗口当作仍在运行。",style=MaterialTheme.typography.bodySmall)
+            Text(tr(R.string.automatic_status, if(!runtime.autoMonitoring)tr(R.string.session_state_off) else if(runtime.monitorProblem==null)tr(R.string.session_state_on) else tr(R.string.state_paused)))
+            Text(tr(R.string.monitor_source_label,tr.source(monitor.selectedSource.name)))
+            monitor.fallbackReason?.let {Text(tr(R.string.monitor_fallback,tr.problem(it)))}
+            runtime.restoreProblem?.let {Text(tr.problem(it),color=MaterialTheme.colorScheme.error)}
+            if(context.getSystemService(android.app.ActivityManager::class.java).isBackgroundRestricted)Text(tr(R.string.background_restricted_help),color=MaterialTheme.colorScheme.error)
+            runtime.monitorProblem?.let {Text(tr.problem(it),color=MaterialTheme.colorScheme.error)}
+            Text(tr(R.string.recent_foreground, DiagnosticFormatter.time(runtime.observedAt,context)))
+            Text(tr(R.string.foreground_target, DiagnosticFormatter.packageLabel(runtime.foregroundPackage,reveal,context)))
+            Row {Text(tr(R.string.show_package_here),modifier=Modifier.weight(1f));Switch(reveal,{reveal=it})}
+            Text(tr(R.string.manual_state_help),style=MaterialTheme.typography.bodySmall)
         }}
-        item {SectionCard("权限检查") {
-            SettingRow("悬浮窗",if(grants.overlay)"已允许" else "未允许",{permission("overlay")})
-            SettingRow("使用情况访问",if(grants.usage)"已允许" else "未允许，仅自动模式需要",{permission("usage")})
-            SettingRow("通知",if(grants.notifications)"已允许" else "未允许",{permission("notifications")})
-            Text("系统最大不透明度：${vm.maxOpacity}%")
+        item {SectionCard(tr(R.string.permission_check)) {
+            SettingRow(tr(R.string.overlay_permission),if(grants.overlay)tr(R.string.allowed) else tr(R.string.not_allowed),{permission("overlay")})
+            SettingRow(tr(R.string.usage_access),if(grants.usage)tr(R.string.allowed) else tr(R.string.usage_optional_needed),{permission("usage")})
+            SettingRow(tr(R.string.notifications),if(grants.notifications)tr(R.string.allowed) else tr(R.string.not_allowed),{permission("notifications")})
+            Text(tr(R.string.maximum_opacity, capabilities.maximumPercent(0)))
         }}
         items(displays,key={it.id}){display->val session=runtime.sessions[display.id]
-            SectionCard(display.label) {
-                Text("模式：${session?.target?.owner?.let {if(it.name=="QUICK_USE")"手动快速使用" else "应用规则"} ?: "已关闭"}")
-                Text("图片：${session?.target?.assetId?.take(8) ?: "无"} · 实际不透明度：${session?.target?.opacityPercent ?: 0}%")
-                Text("最近挂载：${DiagnosticFormatter.time(session?.mountedAt ?: 0)}")
-                runtime.failures[display.id]?.let {Text(it,color=MaterialTheme.colorScheme.error)}
+            SectionCard(tr.displayName(display.id)) {
+                Text(tr(R.string.display_mode, session?.target?.owner?.let {if(it.name=="QUICK_USE")tr(R.string.manual_mode) else tr(R.string.rule_mode)} ?: tr(R.string.closed)))
+                Text(tr(R.string.actual_image_opacity, session?.target?.assetId?.take(8) ?: tr(R.string.none),session?.target?.opacityPercent ?: 0))
+                Text(tr(R.string.last_mount,DiagnosticFormatter.time(session?.mountedAt ?: 0,context)))
+                runtime.failures[display.id]?.let {Text(tr.message(it),color=MaterialTheme.colorScheme.error)}
             }
         }
-        item {SectionCard("导出与排查","导出和复制始终隐藏目标包名，不包含文件 URI、用户目录或图片路径；无自动网络上报。") {
-            Button(onClick={val clipboard=context.getSystemService(ClipboardManager::class.java);clipboard.setPrimaryClip(ClipData.newPlainText("EasyOverlay diagnostics",DiagnosticFormatter.summary(context,vm.container,false)));vm.message("脱敏诊断已复制")}){Text("复制脱敏摘要")}
-            OutlinedButton(onClick=export){Text("导出诊断文件")}
-            Text("频繁被系统停止：检查系统电池管理，并从应用主动重新开启。系统安全页、锁屏、权限弹窗和部分外接屏可能无法覆盖。",style=MaterialTheme.typography.bodySmall)
+        item {SectionCard(tr(R.string.export_troubleshoot),tr(R.string.diagnostics_privacy)) {
+            Button(onClick={val clipboard=context.getSystemService(ClipboardManager::class.java);clipboard.setPrimaryClip(ClipData.newPlainText("EasyOverlay diagnostics",DiagnosticFormatter.summary(context,vm.container,false)));vm.message(tr(R.string.diagnostics_copied))}){Text(tr(R.string.copy_summary))}
+            OutlinedButton(onClick=export){Text(tr(R.string.export_diagnostics))}
+            Text(tr(R.string.recover_automatic_help),style=MaterialTheme.typography.bodySmall)
         }}
-        item {Text("最近 ${events.size} 条本地事件",style=MaterialTheme.typography.titleMedium)}
-        items(events.asReversed()){event->Text("${DiagnosticFormatter.time(event.at)}\n${event.code} · 屏幕 ${event.displayId ?: "—"}",style=MaterialTheme.typography.bodySmall)}
+        item {Text(tr(R.string.recent_event_count,events.size),style=MaterialTheme.typography.titleMedium)}
+        items(events.asReversed()){event->Text(tr(R.string.diagnostic_event_line,DiagnosticFormatter.time(event.at,context),event.code,event.displayId?.toString() ?: "—"),style=MaterialTheme.typography.bodySmall)}
     }
 }
 
 @Composable fun AboutScreen() {
+    val tr = rememberStrings()
     val context=LocalContext.current
-    val license by produceState("") {value=withContext(Dispatchers.IO){context.assets.open("LICENSE.txt").bufferedReader().use {it.readText()}}}
+    val open:(String)->Unit={url->try{context.startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(url)))}catch(_:Exception){}}
+    var notices by remember {mutableStateOf(false)}
+    val license by produceState("") {value=withContext(Dispatchers.IO){listOf("LICENSE.txt","Shizuku-API-LICENSE.txt","Dhizuku-API-LICENSE.txt").joinToString("\n\n") {name->context.assets.open(name).bufferedReader().use {it.readText()}}}}
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
         item {Text("EasyOverlay ${BuildConfig.VERSION_NAME}",style=MaterialTheme.typography.headlineMedium)}
-        item {Text("基于 PerryKum / ImageOverlay 的非官方 Fork，保留上游版权与 GPL-3.0 许可证。EasyOverlay 使用独立包名，可与原版并存。")}
-        item {Text("源码：https://github.com/Hycnyl/EasyOverlay\n上游：https://github.com/PerryKum/ImageOverlay")}
-        item {Text("第三方组件：AndroidX / Compose / DataStore（Apache-2.0）、Kotlin / kotlinx.coroutines（Apache-2.0）、Gson（Apache-2.0）。图片解码使用 Android 系统组件。")}
-        item {Text("支持范围：Android 13–16；compile SDK 36，target SDK 35。尚无真实设备验收记录，触摸穿透、长期后台、双屏与实体键需按设备验证。",style=MaterialTheme.typography.bodySmall)}
-        item {Text(license,style=MaterialTheme.typography.bodySmall)}
+        item {Text(tr(R.string.about_description))}
+        item {SectionCard(tr(R.string.about_author)) {SettingRow("Hycnyl","https://github.com/Hycnyl",{open("https://github.com/Hycnyl")})}}
+        item {SectionCard(tr(R.string.about_repository)) {SettingRow("EasyOverlay","https://github.com/Hycnyl/EasyOverlay",{open("https://github.com/Hycnyl/EasyOverlay")})}}
+        item {SettingRow(tr(R.string.about_open_source),"GPL-3.0",{notices=!notices})}
+        if(notices) {
+            item {Text(tr(R.string.about_fork))}
+            item {Text(tr(R.string.about_sources))}
+            item {Text(tr(R.string.about_libraries))}
+            item {Text(license,style=MaterialTheme.typography.bodySmall)}
+        }
     }
 }
